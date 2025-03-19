@@ -1,9 +1,11 @@
-# create this addin
+# setup this app
+## clone this repository
+
+## npm setup
 ```
-npm install -g yo generator-office
-yo office
-Office Add-in Task Pane project using React framework
+npm install
 ```
+
 # start this addin
 ```
 npm start
@@ -14,4 +16,11 @@ npm start
 # stop this addin
 ```
 npm stop
+```
+
+# create this addin
+```
+npm install -g yo generator-office
+yo office
+Office Add-in Task Pane project using React framework
 ```
