@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Tab,
   TabList,
@@ -12,17 +12,10 @@ import { Chat24Regular, Settings24Regular } from "@fluentui/react-icons";
 import Header from "./Header";
 import ChatInput from "./ChatInput";
 import Settings from "./Settings";
+import { OpenAISettings } from "./types";
 
 interface AppProps {
   title: string;
-}
-
-interface OpenAISettings {
-  apiKey: string;
-  baseUrl: string;
-  model: string;
-  temperature: number;
-  maxTokens: number;
 }
 
 const useStyles = makeStyles({
@@ -48,21 +41,38 @@ const App: React.FC<AppProps> = (props: AppProps) => {
   const [selectedTab, setSelectedTab] = useState<TabValue>("chat");
   const [openAISettings, setOpenAISettings] = useState<OpenAISettings | null>(null);
 
-  const onTabSelect = (event: SelectTabEvent,data: SelectTabData) => {
+  // コンポーネントマウント時に保存された設定を読み込み
+  useEffect(() => {
+    const loadSettings = () => {
+      try {
+        const savedSettings = localStorage.getItem('powerpoint-concierge-settings');
+        if (savedSettings) {
+          const parsed = JSON.parse(savedSettings);
+          setOpenAISettings(parsed);
+        }
+      } catch (error) {
+        console.error("Failed to load saved settings:", error);
+      }
+    };
+
+    loadSettings();
+  }, []);
+
+  const onTabSelect = (event: SelectTabEvent, data: SelectTabData) => {
     console.log(event);
     setSelectedTab(data.value);
   };
 
   const handleSendMessage = async (message: string) => {
-    // TODO: OpenAI APIとの連携を実装
     console.log("Sending message:", message);
     console.log("Current settings:", openAISettings);
     
-    // 現在は仮の処理として、プロミスを返すだけ
+    // この関数は現在ChatInputコンポーネント内で処理されているため、
+    // ここでは簡単なログ出力のみ行う
     return new Promise<void>((resolve) => {
       setTimeout(() => {
         resolve();
-      }, 1000);
+      }, 100);
     });
   };
 
@@ -91,7 +101,10 @@ const App: React.FC<AppProps> = (props: AppProps) => {
 
         <div className={styles.tabContent}>
           {selectedTab === "chat" && (
-            <ChatInput onSendMessage={handleSendMessage} />
+            <ChatInput 
+              onSendMessage={handleSendMessage}
+              settings={openAISettings}
+            />
           )}
           {selectedTab === "settings" && (
             <Settings onSettingsChange={handleSettingsChange} />

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Button, 
   Field, 
@@ -10,19 +10,18 @@ import {
   CardHeader,
   CardPreview,
   Text,
-  Divider
+  Divider,
+  Spinner,
+  MessageBar,
 } from "@fluentui/react-components";
-import { Send24Regular, Chat24Regular } from "@fluentui/react-icons";
-
-interface ChatMessage {
-  id: string;
-  content: string;
-  timestamp: Date;
-  type: 'user' | 'assistant';
-}
+import { Send24Regular, Chat24Regular, DocumentAdd24Regular } from "@fluentui/react-icons";
+import { OpenAIService } from '../../services/openai.service';
+import { PowerPointService } from '../../services/powerpoint.service';
+import { ChatMessage, OpenAISettings } from './types';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => Promise<void>;
+  settings: OpenAISettings | null;
 }
 
 const useStyles = makeStyles({
@@ -66,7 +65,9 @@ const useStyles = makeStyles({
   textareaField: {
     width: "100%",
   },
-  sendButton: {
+  buttonGroup: {
+    display: "flex",
+    gap: "8px",
     alignSelf: "flex-end",
   },
   timestamp: {
@@ -78,16 +79,44 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground3,
     padding: "20px",
   },
+  loadingContainer: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "12px",
+  },
+  messageContent: {
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+  },
 });
 
-const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
+const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
   const [message, setMessage] = useState<string>("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [openAIService, setOpenAIService] = useState<OpenAIService | null>(null);
+  const [powerPointService] = useState<PowerPointService>(new PowerPointService());
+  const [error, setError] = useState<string>("");
   const styles = useStyles();
+
+  // OpenAI設定が変更されたときにサービスを更新
+  useEffect(() => {
+    if (settings && settings.apiKey) {
+      setOpenAIService(new OpenAIService(settings));
+      setError("");
+    } else {
+      setOpenAIService(null);
+    }
+  }, [settings]);
 
   const handleSendMessage = async () => {
     if (!message.trim() || isLoading) return;
+
+    if (!openAIService) {
+      setError("OpenAI APIの設定を完了してください。設定タブでAPIキーを入力してください。");
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -99,24 +128,58 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
     setMessages(prev => [...prev, userMessage]);
     setMessage("");
     setIsLoading(true);
+    setError("");
 
     try {
-      await onSendMessage(userMessage.content);
+      // OpenAI APIを呼び出してアウトラインを生成
+      const response = await openAIService.generateOutline(userMessage.content);
       
-      // 現在は仮の応答を追加（後でOpenAI APIと連携）
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        content: "メッセージを受信しました。OpenAI APIとの連携は次のステップで実装します。",
+        content: response,
         timestamp: new Date(),
         type: 'assistant'
       };
       
       setMessages(prev => [...prev, assistantMessage]);
+
+      // 通知
+      await onSendMessage(userMessage.content);
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("Error calling OpenAI API:", error);
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        content: "エラーが発生しました。もう一度お試しください。",
+        content: `エラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}`,
+        timestamp: new Date(),
+        type: 'assistant'
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      setError(error instanceof Error ? error.message : '不明なエラーが発生しました');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddToPowerPoint = async (content: string) => {
+    if (!content.trim()) return;
+
+    setIsLoading(true);
+    try {
+      // OpenAIの応答をPowerPointのテキストボックスとして追加
+      await powerPointService.addTextBox(content);
+      
+      const successMessage: ChatMessage = {
+        id: Date.now().toString(),
+        content: "✅ PowerPointにテキストボックスを追加しました！",
+        timestamp: new Date(),
+        type: 'assistant'
+      };
+      setMessages(prev => [...prev, successMessage]);
+    } catch (error) {
+      console.error("Error adding to PowerPoint:", error);
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        content: `PowerPointへの追加でエラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}`,
         timestamp: new Date(),
         type: 'assistant'
       };
@@ -146,11 +209,19 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
         <Chat24Regular />
         <Text weight="semibold" size={400}>PowerPoint Concierge</Text>
       </div>
+
+      {error && (
+        <MessageBar intent="error" className="mb-4">
+          {error}
+        </MessageBar>
+      )}
       
       <div className={styles.chatMessages}>
         {messages.length === 0 ? (
           <div className={styles.emptyState}>
             <Text>PowerPointプレゼンテーションの作成についてお聞かせください。</Text>
+            <br />
+            <Text size={200}>例: "営業戦略についてのプレゼンテーションを作成してください"</Text>
           </div>
         ) : (
           messages.map((msg) => (
@@ -169,19 +240,31 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
                     {formatTimestamp(msg.timestamp)}
                   </Text>
                 }
+                action={
+                  msg.type === 'assistant' && msg.content && !msg.content.startsWith('✅') && !msg.content.startsWith('エラー') ? (
+                    <Button
+                      size="small"
+                      appearance="subtle"
+                      icon={<DocumentAdd24Regular />}
+                      onClick={() => handleAddToPowerPoint(msg.content)}
+                      disabled={isLoading}
+                    >
+                      PowerPointに追加
+                    </Button>
+                  ) : null
+                }
               />
               <CardPreview>
-                <Text>{msg.content}</Text>
+                <Text className={styles.messageContent}>{msg.content}</Text>
               </CardPreview>
             </Card>
           ))
         )}
         {isLoading && (
-          <Card className={`${styles.messageCard} ${styles.assistantMessage}`}>
-            <CardPreview>
-              <Text>入力中...</Text>
-            </CardPreview>
-          </Card>
+          <div className={styles.loadingContainer}>
+            <Spinner size="tiny" />
+            <Text>AI が応答を生成中...</Text>
+          </div>
         )}
       </div>
 
@@ -203,15 +286,16 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
           />
         </Field>
         
-        <Button
-          className={styles.sendButton}
-          appearance="primary"
-          icon={<Send24Regular />}
-          onClick={handleSendMessage}
-          disabled={!message.trim() || isLoading}
-        >
-          {isLoading ? "送信中..." : "送信"}
-        </Button>
+        <div className={styles.buttonGroup}>
+          <Button
+            appearance="primary"
+            icon={<Send24Regular />}
+            onClick={handleSendMessage}
+            disabled={!message.trim() || isLoading || !openAIService}
+          >
+            {isLoading ? "送信中..." : "送信"}
+          </Button>
+        </div>
       </div>
     </div>
   );
