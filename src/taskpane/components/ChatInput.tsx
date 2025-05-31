@@ -1,3 +1,4 @@
+// src/taskpane/components/ChatInput.tsx - 更新版（新しいPowerPointServiceを使用）
 import * as React from "react";
 import { useState, useEffect } from "react";
 import { 
@@ -13,11 +14,6 @@ import {
   Divider,
   Spinner,
   MessageBar,
-  Tab,
-  TabList,
-  TabValue,
-  SelectTabData,
-  SelectTabEvent,
 } from "@fluentui/react-components";
 import { 
   Send24Regular, 
@@ -27,7 +23,7 @@ import {
   ArrowRight24Regular,
 } from "@fluentui/react-icons";
 import { OpenAIService } from '../../services/openai.service';
-import { PowerPointService } from '../../services/powerpoint.service';
+import { PowerPointService } from '../../services/powerpoint'; // 新しいパス
 import { ChatMessage, OpenAISettings } from './types';
 import OutlineEditor, { PresentationOutline } from './OutlineEditor';
 
@@ -251,25 +247,29 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
     setGenerationProgress("スライド生成を開始します...");
 
     try {
-      for (let i = 0; i < outline.slides.length; i++) {
-        const slide = outline.slides[i];
-        setGenerationProgress(`スライド ${i + 1}/${outline.slides.length} を生成中: ${slide.title}`);
-        
-        // 各スライドのコンテンツを結合
-        const slideContent = slide.content.join('\n• ');
-        const fullContent = `${slide.title}\n\n• ${slideContent}`;
-        
-        if (i === 0) {
-          // 最初のスライドは新規追加
-          await powerPointService.addSlide(slide.title, slideContent);
-        } else {
-          // 2枚目以降も新規追加
-          await powerPointService.addSlide(slide.title, slideContent);
+      // 新しいBulkSlideData形式に変換
+      const bulkData = {
+        slides: outline.slides.map(slide => ({
+          title: slide.title,
+          content: slide.content,
+          slideType: slide.slideType,
+          speakerNotes: slide.speakerNotes
+        })),
+        options: {
+          slideLayout: 'content' as const,
+          theme: 'light' as const,
+          fontSize: 'medium' as const,
+          includeTransitions: false
         }
-        
-        // 少し待機（PowerPointのレスポンス確保）
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
+      };
+
+      // 新しいPowerPointServiceを使用してスライドを一括生成
+      await powerPointService.generateBulkSlides(
+        bulkData,
+        (current, total, slideName) => {
+          setGenerationProgress(`スライド ${current}/${total} を生成中: ${slideName}`);
+        }
+      );
 
       setGenerationProgress("スライド生成完了！");
       setCurrentStep('completed');
