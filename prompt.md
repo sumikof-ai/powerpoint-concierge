@@ -1,4 +1,4 @@
-# PowerPoint自動生成アドイン - 改良版開発仕様
+# PowerPoint自動生成アドイン - テーマ対応・動的生成対応版開発仕様
 
 ## プロジェクト概要
 
@@ -6,16 +6,22 @@ https://github.com/sumikof-ai/powerpoint-concierge.git のリポジトリをベ�
 
 ## 核心機能要件
 
-### 1. チャット入力とAPI連携
+### 1. テーマ・デザイン対応機能
 
-- **入力処理**: ユーザーがサイドパネルのチャット欄に要件を入力
-- **API呼び出し**: 設定可能なOpenAI API（デフォルトGPT-4）にリクエスト送信
-- **レスポンス処理**: API応答を解析してPowerPoint操作用のデータに変換
+#### 現在のテーマ情報取得
+- **テーマ検出**: 現在開いているPowerPointのテーマ名、カラースキーム、フォント設定を取得
+- **レイアウト分析**: 利用可能なスライドレイアウト（タイトルスライド、内容スライド等）の構造を解析
+- **デザイン要素識別**: 現在のテーマに含まれるプレースホルダーの種類と配置を特定
 
-### 2. 段階的プレゼンテーション作成フロー
+#### スマートコンテンツ配置
+- **プレースホルダー活用**: テキストボックスではなく、既存のプレースホルダー（タイトル、コンテンツ、サブタイトル等）を優先使用
+- **レイアウト自動選択**: スライドの内容タイプ（タイトル、箇条書き、比較、まとめ等）に最適なレイアウトを自動選択
+- **テーマ準拠**: 現在のテーマのフォント、色、スタイル設定を維持
+
+### 2. 動的コンテンツ生成フロー
 
 ```
-Step 1: アウトライン生成 → Step 2: 確認・修正 → Step 3: スライド生成 → Step 4: 個別編集
+Step 1: アウトライン生成 → Step 2: 確認・修正 → Step 3: 動的スライド生成 → Step 4: 個別編集
 ```
 
 #### Step 1: アウトライン自動生成
@@ -25,12 +31,15 @@ Step 1: アウトライン生成 → Step 2: 確認・修正 → Step 3: スラ�
 ```json
 {
   "title": "プレゼンテーションタイトル",
+  "audience": "想定聴衆",
+  "objective": "プレゼンテーションの目的",
   "slides": [
     {
       "slideNumber": 1,
       "title": "スライドタイトル",
-      "content": ["要点1", "要点2", "要点3"],
-      "slideType": "title|content|conclusion"
+      "contentType": "title|bullets|comparison|conclusion|chart|image_with_text",
+      "keyPoints": ["要点1", "要点2", "要点3"],
+      "detailLevel": "basic|detailed|comprehensive"
     }
   ],
   "estimatedDuration": "想定発表時間（分）"
@@ -41,116 +50,203 @@ Step 1: アウトライン生成 → Step 2: 確認・修正 → Step 3: スラ�
 
 - 生成されたアウトラインをツリー表示
 - インラインで編集可能（タイトル、要点の追加・削除・並び替え）
+- 各スライドの詳細レベル調整（基本/詳細/包括的）
 - 「このアウトラインで作成開始」ボタン
 - 「AIに再生成を依頼」機能（追加指示入力可能）
 
-#### Step 3: 自動スライド生成
+#### Step 3: 動的スライド生成
 
-- アウトラインに基づいて複数スライドを一括生成
-- 進捗表示（「スライド 3/10 作成中...」）
-- 各スライドの内容：
-  - タイトル（編集可能テキスト）
-  - 本文（箇条書き、編集可能テキスト）
-  - 適切なレイアウト自動選択
+**3.1 スライド別詳細生成**
+各スライド作成時に以下の処理を実行：
 
-#### Step 4: 個別スライド編集
+1. **コンテンツ詳細化API呼び出し**
+   ```json
+   {
+     "slideContext": {
+       "presentationTitle": "全体タイトル",
+       "slideTitle": "現在のスライドタイトル",
+       "slideNumber": 3,
+       "totalSlides": 10,
+       "previousSlideContent": "前スライドの概要",
+       "nextSlidePreview": "次スライドの予定内容"
+     },
+     "contentRequirements": {
+       "detailLevel": "詳細レベル指定",
+       "targetAudience": "聴衆レベル",
+       "presentationStyle": "formal|casual|technical"
+     },
+     "designConstraints": {
+       "availableLayouts": ["使用可能レイアウト一覧"],
+       "themeColors": ["テーマカラー情報"],
+       "maxTextLength": "文字数制限"
+     }
+   }
+   ```
 
-- スライド一覧表示（サムネイル付き）
-- 特定スライドを選択して再編集
-- 編集指示の自由入力（「このスライドをもっと詳しく」等）
+2. **動的コンテンツ生成**
+   - 箇条書きの場合：各項目の詳細説明を生成
+   - 比較スライドの場合：対比表や説明文を生成
+   - まとめスライドの場合：全体の流れを踏まえた総括を生成
 
-### 3. PowerPoint操作仕様
+3. **レイアウト最適化**
+   - 生成されたコンテンツ量に応じてレイアウトを調整
+   - 長文の場合は複数スライドに分割提案
+   - 図表が必要な場合はプレースホルダーと説明を配置
 
-- **対象**: 現在開いているPowerPointファイルを直接編集
-- **保存**: ユーザーが手動で「名前を付けて保存」
-- **テキスト形式**: すべてのテキストは編集可能な形式で挿入（画像化しない）
-- **レイアウト**: PowerPointの標準レイアウトを活用
+**3.2 プログレッシブ生成**
+- 進捗表示（「スライド 3/10 詳細生成中...」）
+- 各スライド完成後にプレビュー表示
+- ユーザーが途中で生成を停止/修正可能
+
+#### Step 4: スマート編集機能
+
+- **コンテキスト考慮編集**: 特定スライドの編集時に、前後のスライドとの整合性を保持
+- **スタイル一貫性**: 編集後もテーマのスタイル設定を維持
+- **再生成オプション**: 「もっと詳しく」「簡潔に」「聴衆レベルを変更」等の指示で部分再生成
+
+### 3. テーマ対応PowerPoint操作仕様
+
+#### 3.1 テーマ情報取得機能
+
+```typescript
+interface ThemeInfo {
+  name: string;
+  colorScheme: {
+    accent1: string;
+    accent2: string;
+    background: string;
+    text: string;
+  };
+  fontScheme: {
+    major: string;  // 見出し用フォント
+    minor: string;  // 本文用フォント
+  };
+  availableLayouts: LayoutInfo[];
+}
+
+interface LayoutInfo {
+  name: string;
+  type: 'title' | 'content' | 'comparison' | 'blank';
+  placeholders: PlaceholderInfo[];
+}
+
+interface PlaceholderInfo {
+  type: 'title' | 'subtitle' | 'content' | 'footer';
+  position: { x: number, y: number, width: number, height: number };
+  textFormat: TextFormatInfo;
+}
+```
+
+#### 3.2 スマートコンテンツ配置
+
+- **プレースホルダー優先**: `slide.placeholders`を使用してコンテンツを配置
+- **階層構造保持**: 箇条書きのインデントレベルを適切に設定
+- **テーマ色適用**: `theme.colors`を参照して適切な色を自動選択
+- **フォント一貫性**: テーマのフォント設定に従って文字スタイルを適用
+
+#### 3.3 動的レイアウト選択
+
+```typescript
+function selectOptimalLayout(contentType: string, contentAmount: number): string {
+  const layoutMapping = {
+    'title': 'Title Slide',
+    'bullets': contentAmount > 100 ? 'Content with Caption' : 'Title and Content',
+    'comparison': 'Two Content',
+    'conclusion': 'Title and Content',
+    'chart': 'Content with Caption'
+  };
+  return layoutMapping[contentType] || 'Title and Content';
+}
+```
 
 ## 技術仕様
 
 ### 開発環境
 
-- **フレームワーク**: Yeoman generator + TypeScript + React（またはNext.js）
-- **Officeアドイン**: Office.js API
-- **スタイリング**: Fluent UI Reactコンポーネント
-- **状態管理**: React Context + useReducer
+- **フレームワーク**: Yeoman generator + TypeScript + React
+- **Officeアドイン**: Office.js API（最新版）
+- **スタイリング**: Fluent UI React v9
+- **状態管理**: React Context + useReducer + React Query（API状態管理）
 
 ### 設定管理
 
 ```typescript
 interface AppConfig {
   openai: {
-    baseUrl: string;        // デフォルト: "https://api.openai.com/v1"
-    apiKey: string;         // 環境変数から取得
-    model: string;          // デフォルト: "gpt-4"
-    maxTokens: number;      // デフォルト: 2000
+    baseUrl: string;
+    apiKey: string;
+    model: string;
+    maxTokens: number;
+    temperature: number;        // 創造性レベル
+  };
+  generation: {
+    detailLevel: 'basic' | 'detailed' | 'comprehensive';
+    presentationStyle: 'formal' | 'casual' | 'technical';
+    useProgressiveGeneration: boolean;
+    maxSlideTextLength: number;
   };
   ui: {
     theme: 'light' | 'dark';
     language: 'ja' | 'en';
+    showPreview: boolean;
   };
 }
 ```
 
-### エラーハンドリング要件
+### API呼び出し戦略
 
-- API接続エラー時の適切なメッセージ表示
-- レート制限時のリトライ機能
-- PowerPoint操作失敗時のロールバック
-- ネットワーク切断時の自動復旧
+#### 3段階API呼び出し
+
+1. **アウトライン生成API**
+   - プロンプト: 「以下の要件から構造化されたプレゼンテーションアウトラインを生成してください」
+   - 出力: JSON形式のアウトライン
+
+2. **スライド詳細生成API**（各スライドごと）
+   - プロンプト: 「以下のコンテキストでスライドの詳細内容を生成してください」
+   - 出力: 具体的なタイトル、箇条書き、説明文
+
+3. **調整・改善API**（オプション）
+   - プロンプト: 「以下のスライドを[指示内容]に従って改善してください」
+   - 出力: 改善されたコンテンツ
 
 ## 実装優先順位
 
-### Phase 1: 基盤機能
+### Phase 1: テーマ対応基盤
 
-1. サイドパネルUI構築
-2. OpenAI API連携（設定読み込み含む）
-3. 基本的なPowerPoint操作（スライド追加、テキスト挿入）
+1. テーマ情報取得機能
+2. プレースホルダー識別・活用機能
+3. 基本的なレイアウト選択機能
 
-### Phase 2: コア機能
+### Phase 2: 動的生成コア
 
-1. アウトライン生成機能
-2. アウトライン編集UI
-3. 複数スライド一括生成
+1. 段階的API呼び出し機能
+2. コンテンツ詳細化機能
+3. プログレッシブ生成UI
 
 ### Phase 3: 高度機能
 
-1. 個別スライド編集
-2. エラーハンドリング
+1. コンテキスト考慮編集
+2. スタイル一貫性保持
 3. パフォーマンス最適化
 
-## コード品質要求
+## エラーハンドリング・パフォーマンス要件
 
-### TypeScript実装
+### API呼び出し最適化
 
-- 厳密な型定義（strict mode有効）
-- インターフェース設計の明確化
-- エラー型の適切な定義
+- **並列処理制限**: 同時API呼び出し数を3以下に制限
+- **リトライ機能**: 失敗時の指数バックオフ実装
+- **キャッシュ機能**: 類似コンテンツの再利用
 
-### テスト要件
+### ユーザー体験向上
 
-- ユニットテスト（Jest + React Testing Library）
-- E2Eテスト（Playwright）
-- API mock機能
+- **リアルタイム進捗**: 各スライド生成の進捗表示
+- **中断・再開機能**: 長時間処理の途中停止・再開
+- **プレビュー機能**: 生成中のコンテンツをリアルタイム表示
 
-### パフォーマンス
+## 開発時重要ポイント
 
-- スライド生成の非同期処理
-- 大量スライド作成時のメモリ効率
-- UI応答性の維持
-
-## セキュリティ要件
-
-- API キーの安全な保存（暗号化）
-- HTTPS通信の強制
-- 入力値の適切なサニタイゼーション
-
-## 開発する際の注意点
-
-1. Office.js APIの非同期処理を適切にハンドリング
-2. PowerPointのバージョン互換性を考慮
-3. リアルタイムでのユーザーフィードバック表示
-4. 長時間処理時のタイムアウト対策
-5. 日本語テキストの適切な処理
-
-現在チャット入力およびOpenAI API連携とアウトライン生成機能の実装が完成している状態から、段階的に機能を追加してください。各機能実装時は、エラーケースとユーザビリティを十分に考慮してください。
+1. **Office.js テーマAPI**: `Office.context.document.theme`を活用
+2. **非同期処理**: 各スライド生成を非同期で実行し、UIをブロックしない
+3. **メモリ管理**: 大量のスライド生成時のメモリリーク防止
+4. **ユーザビリティ**: 生成過程でのユーザーフィードバック重視
+5. **エラー回復**: 部分的な失敗時も他のスライドは正常に生成続行
