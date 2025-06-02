@@ -1,4 +1,4 @@
-// src/services/powerpoint/types.ts - 型定義
+// src/services/powerpoint/types.ts - 型定義（テーマ対応版）
 /* global PowerPoint */
 
 export interface SlideInfo {
@@ -14,6 +14,7 @@ export interface SlideInfo {
     slideLayout?: 'title' | 'content' | 'twoContent' | 'comparison' | 'blank';
     theme?: 'light' | 'dark' | 'colorful';
     fontSize?: 'small' | 'medium' | 'large';
+    useThemeAwareGeneration?: boolean; // テーマ対応生成を使用するかどうか
   }
   
   export interface SlideContent {
