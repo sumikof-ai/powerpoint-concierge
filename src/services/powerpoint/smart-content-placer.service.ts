@@ -1,7 +1,8 @@
 // src/services/powerpoint/smart-content-placer.service.ts - スマートコンテンツ配置サービス
 /* global PowerPoint */
 
-import { ThemeService, ThemeInfo, LayoutInfo, PlaceholderInfo } from './theme.service';
+import { ThemeInfo, LayoutInfo, PlaceholderInfo } from './theme-types';
+import { ThemeService } from './theme/ThemeService';
 import { SlideContent, SlideGenerationOptions } from './types';
 
 /**
