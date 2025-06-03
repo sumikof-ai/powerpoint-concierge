@@ -1,5 +1,4 @@
-// src/services/powerpoint/types.ts - 型定義（テーマ対応版）
-/* global PowerPoint */
+// src/services/powerpoint/types.ts - 更新版（実用的なテーマ対応）
 
 export interface SlideInfo {
     id: string;
@@ -14,7 +13,7 @@ export interface SlideInfo {
     slideLayout?: 'title' | 'content' | 'twoContent' | 'comparison' | 'blank';
     theme?: 'light' | 'dark' | 'colorful';
     fontSize?: 'small' | 'medium' | 'large';
-    useThemeAwareGeneration?: boolean; // テーマ対応生成を使用するかどうか
+    useThemeAwareGeneration?: boolean;
   }
   
   export interface SlideContent {
@@ -43,6 +42,24 @@ export interface SlideInfo {
     wordCount: number;
   }
   
+  export interface ThemeColors {
+    backgroundColor: string;
+    textColor: string;
+    accentColor: string;
+    titleColor: string;
+    borderColor: string;
+  }
+  
+  export interface PresentationInfo {
+    slideCount: number;
+    title: string;
+    existingStyle: {
+      commonFontSize: number;
+      commonFontColor: string;
+      backgroundDetected: boolean;
+    } | null;
+  }
+  
   export type SlideLayoutType = 'title' | 'content' | 'twoContent' | 'comparison' | 'blank';
   export type ThemeType = 'light' | 'dark' | 'colorful';
   export type FontSizeType = 'small' | 'medium' | 'large';
@@ -58,4 +75,45 @@ export interface SlideInfo {
     top: number;
     width: number;
     height: number;
+  }
+  
+  // 実用的なテーマプリセット用の型
+  export interface ThemePreset {
+    name: string;
+    colors: ThemeColors;
+    description: string;
+  }
+  
+  // スライド作成結果の型
+  export interface SlideCreationResult {
+    success: boolean;
+    slideIndex: number;
+    title: string;
+    error?: string;
+  }
+  
+  // 一括スライド生成の進捗情報
+  export interface GenerationProgress {
+    current: number;
+    total: number;
+    currentSlideName: string;
+    percentage: number;
+    timeElapsed: number;
+    estimatedTimeRemaining?: number;
+  }
+  
+  // エラーハンドリング用の型
+  export interface PowerPointError {
+    code: string;
+    message: string;
+    details?: any;
+    recoverable: boolean;
+  }
+  
+  // デバッグ・テスト用の型
+  export interface ThemeTestResult {
+    themeName: string;
+    slidesCreated: number;
+    errors: string[];
+    executionTime: number;
   }
