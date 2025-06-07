@@ -1,4 +1,4 @@
-// src/services/powerpoint/PowerPointService.ts - SlideManager統合版
+// src/services/powerpoint/powerpoint.service.ts - SlideContentGenerator統合版
 /* global PowerPoint */
 
 import {
@@ -12,9 +12,12 @@ import { SlideFactory } from './core/SlideFactory';
 import { ContentRenderer } from './core/ContentRenderer';
 import { ThemeApplier } from './core/ThemeApplier';
 import { PresentationAnalyzer } from './presentation-analyzer.service';
+import { SlideContentGenerator } from './core/SlideContentGenerator';
+import { PresentationOutline } from '../../taskpane/components/types';
+import { OpenAIService } from '../openai.service';
 
 /**
- * PowerPoint操作のメインサービスクラス（SlideManager統合版）
+ * PowerPoint操作のメインサービスクラス（SlideContentGenerator統合版）
  * 各専門サービスを組み合わせて高レベルな操作を提供
  */
 export class PowerPointService {
@@ -39,7 +42,67 @@ export class PowerPointService {
   }
 
   /**
-   * 複数のスライドを一括生成（メイン機能）
+   * アウトラインからの詳細化スライド生成（新機能）
+   */
+  public async generateSlidesFromOutline(
+    outline: PresentationOutline,
+    openAIService: OpenAIService,
+    options: SlideGenerationOptions = {},
+    onProgress?: (current: number, total: number, slideName: string) => void
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      PowerPoint.run(async (context) => {
+        try {
+          const mergedOptions = { ...this.defaultOptions, ...options };
+          
+          // SlideContentGeneratorを使用してコンテンツを詳細化
+          const slideContentGenerator = new SlideContentGenerator(openAIService);
+          
+          // 詳細化進捗のコールバック
+          const detailProgress = (current: number, total: number, slideName: string) => {
+            if (onProgress) {
+              onProgress(current, total, `📝 ${slideName} の詳細化中...`);
+            }
+          };
+
+          // エラーハンドリング付きで詳細化を実行
+          const detailedSlides = await slideContentGenerator.generateWithErrorHandling(
+            outline,
+            mergedOptions,
+            detailProgress,
+            (slideIndex, error) => {
+              console.warn(`スライド ${slideIndex + 1} の詳細化でエラー:`, error.message);
+              if (onProgress) {
+                onProgress(slideIndex + 1, outline.slides.length, `⚠️ スライド ${slideIndex + 1} フォールバック処理`);
+              }
+            }
+          );
+
+          // PowerPointスライド生成進捗のコールバック
+          const slideProgress = (current: number, total: number, slideName: string) => {
+            if (onProgress) {
+              onProgress(current, total, `🎨 ${slideName} のスライド作成中...`);
+            }
+          };
+
+          // 詳細化されたコンテンツでスライドを作成
+          await this.slideFactory.createBulkSlides(
+            context,
+            detailedSlides,
+            mergedOptions,
+            slideProgress
+          );
+
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+  }
+
+  /**
+   * 複数のスライドを一括生成（従来機能）
    */
   public async generateBulkSlides(
     bulkData: BulkSlideData,
@@ -249,6 +312,45 @@ export class PowerPointService {
   }
 
   /**
+   * アウトライン詳細化のテスト機能
+   */
+  public async testDetailedGeneration(openAIService: OpenAIService): Promise<void> {
+    const testOutline: PresentationOutline = {
+      title: "詳細化テスト用プレゼンテーション",
+      estimatedDuration: 15,
+      slides: [
+        {
+          slideNumber: 1,
+          title: "テスト概要",
+          content: ["目的", "範囲", "期待効果"],
+          slideType: 'title'
+        },
+        {
+          slideNumber: 2,
+          title: "現状分析",
+          content: ["課題", "機会", "制約条件"],
+          slideType: 'content'
+        },
+        {
+          slideNumber: 3,
+          title: "まとめ",
+          content: ["要点", "次ステップ", "アクション"],
+          slideType: 'conclusion'
+        }
+      ]
+    };
+
+    await this.generateSlidesFromOutline(
+      testOutline,
+      openAIService,
+      { theme: 'light', fontSize: 'medium' },
+      (current, total, status) => {
+        console.log(`詳細化テスト進捗: ${current}/${total} - ${status}`);
+      }
+    );
+  }
+
+  /**
    * スライドのテキストボックスをクリア（SlideManager機能を統合）
    */
   private async clearSlideTextBoxes(context: PowerPoint.RequestContext, slide: PowerPoint.Slide): Promise<void> {
@@ -399,5 +501,65 @@ export class PowerPointService {
     }
 
     return suggestions;
+  }
+
+  /**
+   * アウトライン詳細化の進捗管理
+   */
+  public async generateSlidesWithDetailedProgress(
+    outline: PresentationOutline,
+    openAIService: OpenAIService,
+    options: SlideGenerationOptions = {},
+    onDetailProgress?: (phase: 'analyzing' | 'detailing' | 'creating', current: number, total: number, message: string) => void
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      PowerPoint.run(async (context) => {
+        try {
+          const mergedOptions = { ...this.defaultOptions, ...options };
+          
+          // Phase 1: アウトライン分析
+          if (onDetailProgress) {
+            onDetailProgress('analyzing', 1, 3, 'アウトライン構造を分析中...');
+          }
+
+          const slideContentGenerator = new SlideContentGenerator(openAIService);
+          
+          // Phase 2: 詳細化
+          if (onDetailProgress) {
+            onDetailProgress('detailing', 2, 3, 'スライドコンテンツを詳細化中...');
+          }
+
+          const detailedSlides = await slideContentGenerator.generateWithErrorHandling(
+            outline,
+            mergedOptions,
+            (current, total, slideName) => {
+              if (onDetailProgress) {
+                onDetailProgress('detailing', current, total, `📝 ${slideName} を詳細化中...`);
+              }
+            }
+          );
+
+          // Phase 3: PowerPoint作成
+          if (onDetailProgress) {
+            onDetailProgress('creating', 3, 3, 'PowerPointスライドを作成中...');
+          }
+
+          await this.slideFactory.createBulkSlides(
+            context,
+            detailedSlides,
+            mergedOptions,
+            (current, total, slideName) => {
+              if (onDetailProgress) {
+                onDetailProgress('creating', current, total, `🎨 ${slideName} を作成中...`);
+              }
+            }
+          );
+
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
   }
 }

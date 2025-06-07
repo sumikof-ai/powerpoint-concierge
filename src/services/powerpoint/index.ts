@@ -1,7 +1,8 @@
-// src/services/powerpoint/index.ts - 修正されたエクスポートファイル
+// src/services/powerpoint/index.ts - SlideContentGenerator統合版
 
 import { SlideFactory } from './core/SlideFactory';
 import { ThemeApplier } from './core/ThemeApplier';
+import { SlideContentGenerator } from './core/SlideContentGenerator';
 import { PowerPointService } from './powerpoint.service';
 import { PresentationAnalyzer } from './presentation-analyzer.service';
 import { ThemeAnalyzer } from './theme/ThemeAnalyzer';
@@ -14,6 +15,7 @@ export { PowerPointService } from './powerpoint.service';
 export { SlideFactory } from './core/SlideFactory';
 export { ContentRenderer } from './core/ContentRenderer';
 export { ThemeApplier } from './core/ThemeApplier';
+export { SlideContentGenerator } from './core/SlideContentGenerator';
 
 // 専門サービス（既存）
 export { PresentationAnalyzer } from './presentation-analyzer.service';
@@ -50,6 +52,25 @@ export function createLightweightPowerPointService(): {
   return {
     slideFactory: new SlideFactory(),
     themeApplier: new ThemeApplier()
+  };
+}
+
+/**
+ * 詳細化機能付きPowerPointサービス（新機能）
+ * SlideContentGeneratorを含む完全版サービス
+ */
+export function createEnhancedPowerPointService(openAIService?: any): {
+  powerPointService: PowerPointService;
+  slideContentGenerator: SlideContentGenerator | null;
+} {
+  const powerPointService = new PowerPointService();
+  const slideContentGenerator = openAIService 
+    ? new SlideContentGenerator(openAIService) 
+    : null;
+
+  return {
+    powerPointService,
+    slideContentGenerator
   };
 }
 
@@ -124,22 +145,214 @@ export function createAdvancedPowerPointService(): {
 }
 
 /**
- * リファクタリング完了を記録
+ * 詳細化機能のテスト用ファクトリー
+ * 開発・テスト環境での使用を想定
+ */
+export function createTestSlideContentGenerator(
+  openAIService: any,
+  testMode: boolean = false
+): SlideContentGenerator {
+  const generator = new SlideContentGenerator(openAIService);
+  
+  if (testMode) {
+    // テストモード用の設定があれば追加
+    console.log('SlideContentGenerator をテストモードで初期化しました');
+  }
+  
+  return generator;
+}
+
+/**
+ * パフォーマンス監視付きサービス
+ * 本番環境での使用を想定
+ */
+export function createMonitoredPowerPointService(): {
+  service: PowerPointService;
+  getPerformanceMetrics: () => any;
+} {
+  const service = new PowerPointService();
+  const startTime = Date.now();
+  let operationCount = 0;
+
+  // 元のメソッドをラップして監視機能を追加
+  const originalGenerateSlidesFromOutline = service.generateSlidesFromOutline.bind(service);
+  
+  service.generateSlidesFromOutline = async (...args) => {
+    operationCount++;
+    const opStartTime = Date.now();
+    
+    try {
+      const result = await originalGenerateSlidesFromOutline(...args);
+      const duration = Date.now() - opStartTime;
+      console.log(`詳細化スライド生成完了: ${duration}ms`);
+      return result;
+    } catch (error) {
+      console.error('詳細化スライド生成エラー:', error);
+      throw error;
+    }
+  };
+
+  return {
+    service,
+    getPerformanceMetrics: () => ({
+      uptime: Date.now() - startTime,
+      operationCount,
+      averageOperationTime: operationCount > 0 ? (Date.now() - startTime) / operationCount : 0
+    })
+  };
+}
+
+/**
+ * エラーハンドリング強化版サービス
+ * エラー処理とログ機能を強化
+ */
+export function createRobustPowerPointService(
+  errorHandler?: (error: Error, context: string) => void
+): PowerPointService {
+  const service = new PowerPointService();
+  
+  // エラーハンドリングの強化
+  const originalMethods = [
+    'generateSlidesFromOutline',
+    'generateBulkSlides',
+    'addSlide',
+    'updateSlide',
+    'deleteSlide'
+  ];
+
+  originalMethods.forEach(methodName => {
+    const originalMethod = (service as any)[methodName];
+    if (typeof originalMethod === 'function') {
+      (service as any)[methodName] = async (...args: any[]) => {
+        try {
+          return await originalMethod.apply(service, args);
+        } catch (error) {
+          const errorContext = `PowerPointService.${methodName}`;
+          console.error(`${errorContext} でエラー:`, error);
+          
+          if (errorHandler) {
+            errorHandler(error instanceof Error ? error : new Error('不明なエラー'), errorContext);
+          }
+          
+          throw error;
+        }
+      };
+    }
+  });
+
+  return service;
+}
+
+/**
+ * リファクタリング完了を記録（更新版）
  */
 export const REFACTORING_INFO = {
-  version: '2.0.0',
+  version: '3.0.0',
   completedAt: new Date().toISOString(),
   changes: [
-    'ChatInput.tsx を3ファイルに分割 (461行 → 最大180行)',
-    'OutlineEditor.tsx を2ファイルに分割 (350行 → 最大170行)', 
-    'PowerPointService を4ファイルに分割 (530行 → 最大250行)',
-    'ThemeService を2ファイルに分割 (324行 → 最大180行)',
-    '全ファイルが300行以内の目標を達成'
+    'SlideContentGenerator を新規作成（スライド毎の詳細化機能）',
+    'PowerPointService に詳細化機能を統合',
+    'ChatInput に詳細な進捗表示を追加',
+    '3段階API呼び出し戦略の完全実装',
+    'エラーハンドリングとフォールバック機能の強化',
+    'スライドタイプ別最適化プロンプトの実装',
+    'リアルタイム進捗管理とユーザー体験の向上'
+  ],
+  newFeatures: [
+    '🔥 スライド毎の詳細化機能',
+    '📊 段階的進捗表示（分析→詳細化→作成）',
+    '🎯 スライドタイプ別最適化',
+    '🔧 エラー時フォールバック',
+    '📈 パフォーマンス監視',
+    '🛡️ ロバストエラーハンドリング'
   ],
   benefits: [
-    '保守性の向上',
-    'テスタビリティの向上', 
-    '再利用性の向上',
-    '開発効率の向上'
+    '説明資料として使える詳細なコンテンツ',
+    '一貫性のある高品質なプレゼンテーション',
+    '大幅な作業時間短縮',
+    '聴衆の自立理解を促進'
   ]
 } as const;
+
+/**
+ * 機能テスト用のヘルパー関数
+ */
+export async function testSlideContentGeneration(
+  openAIService: any,
+  testOutline?: any
+): Promise<{
+  success: boolean;
+  results: any[];
+  errors: string[];
+}> {
+  const results: any[] = [];
+  const errors: string[] = [];
+
+  try {
+    const generator = new SlideContentGenerator(openAIService);
+    const service = new PowerPointService();
+
+    // デフォルトテストアウトライン
+    const outline = testOutline || {
+      title: "テスト用プレゼンテーション",
+      estimatedDuration: 10,
+      slides: [
+        {
+          slideNumber: 1,
+          title: "テスト概要",
+          content: ["目的", "範囲"],
+          slideType: 'title'
+        },
+        {
+          slideNumber: 2,
+          title: "テスト詳細",
+          content: ["内容1", "内容2"],
+          slideType: 'content'
+        }
+      ]
+    };
+
+    // 詳細化テスト
+    console.log('詳細化テストを開始...');
+    const detailedSlides = await generator.generateDetailedSlides(
+      outline,
+      { theme: 'light', fontSize: 'medium' },
+      (current, total, name) => {
+        console.log(`進捗: ${current}/${total} - ${name}`);
+      }
+    );
+
+    results.push({
+      type: 'detailed_slides',
+      count: detailedSlides.length,
+      success: true
+    });
+
+    // PowerPoint生成テスト
+    console.log('PowerPoint生成テストを開始...');
+    await service.generateSlidesFromOutline(
+      outline,
+      openAIService,
+      { theme: 'light', fontSize: 'medium' }
+    );
+
+    results.push({
+      type: 'powerpoint_generation',
+      success: true
+    });
+
+    return {
+      success: true,
+      results,
+      errors
+    };
+
+  } catch (error) {
+    errors.push(error instanceof Error ? error.message : '不明なエラー');
+    return {
+      success: false,
+      results,
+      errors
+    };
+  }
+}

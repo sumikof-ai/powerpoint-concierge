@@ -1,4 +1,4 @@
-// src/taskpane/components/chat/ChatInput.tsx - リファクタリング版メインコンポーネント
+// src/taskpane/components/chat/ChatInput.tsx - SlideContentGenerator統合版
 import * as React from "react";
 import { useState, useEffect } from "react";
 import { 
@@ -12,6 +12,7 @@ import {
   Divider,
   Spinner,
   MessageBar,
+  ProgressBar,
   tokens, 
   makeStyles,
 } from "@fluentui/react-components";
@@ -105,7 +106,33 @@ const useStyles = makeStyles({
     whiteSpace: "pre-wrap",
     wordBreak: "break-word",
   },
+  progressSection: {
+    padding: "16px",
+    backgroundColor: tokens.colorNeutralBackground2,
+    borderRadius: tokens.borderRadiusMedium,
+    marginBottom: "16px",
+  },
+  progressDetails: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+  },
+  phaseIndicator: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    marginBottom: "8px",
+  },
+  errorCard: {
+    backgroundColor: tokens.colorPaletteRedBackground1,
+    border: "1px solid " + tokens.colorPaletteRedBorder1,
+    padding: "12px",
+    borderRadius: tokens.borderRadiusMedium,
+    marginBottom: "16px",
+  },
 });
+
+type GenerationPhase = 'analyzing' | 'detailing' | 'creating';
 
 const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
   const [message, setMessage] = useState<string>("");
@@ -117,6 +144,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('chat');
   const [currentOutline, setCurrentOutline] = useState<PresentationOutline | null>(null);
   const [generationProgress, setGenerationProgress] = useState<string>("");
+  const [generationPhase, setGenerationPhase] = useState<GenerationPhase>('analyzing');
+  const [progressPercentage, setProgressPercentage] = useState<number>(0);
   
   // テーマ設定
   const [selectedTheme, setSelectedTheme] = useState<'light' | 'dark' | 'colorful'>('light');
@@ -160,7 +189,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
       
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        content: `✅ アウトラインを生成しました！\n\nタイトル: ${outline.title}\nスライド数: ${outline.slides.length}\n予想時間: ${outline.estimatedDuration}分\n\n「アウトライン編集」タブで内容を確認・編集してください。`,
+        content: `✅ アウトラインを生成しました！\n\nタイトル: ${outline.title}\nスライド数: ${outline.slides.length}\n予想時間: ${outline.estimatedDuration}分\n\n「アウトライン編集」タブで内容を確認・編集してください。\n\n💡 スライド生成時は、各スライドのコンテンツがAIによって詳細化され、説明資料として使用できるレベルに拡張されます。`,
         timestamp: new Date(),
         type: 'assistant'
       };
@@ -212,42 +241,55 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
   };
 
   const handleGenerateSlides = async (outline: PresentationOutline) => {
-    if (!outline) return;
+    if (!outline || !openAIService) return;
 
     setCurrentStep('generating');
     setIsLoading(true);
-    setGenerationProgress("スライド生成を開始します...");
+    setGenerationProgress("詳細化プロセスを開始します...");
+    setProgressPercentage(0);
 
     try {
-      const bulkData = {
-        slides: outline.slides.map(slide => ({
-          title: slide.title,
-          content: slide.content,
-          slideType: slide.slideType,
-          speakerNotes: slide.speakerNotes
-        })),
-        options: {
+      // 詳細な進捗管理機能を使用
+      await powerPointService.generateSlidesWithDetailedProgress(
+        outline,
+        openAIService,
+        {
           slideLayout: 'content' as const,
           theme: selectedTheme,
           fontSize: selectedFontSize,
           includeTransitions: false,
           useThemeAwareGeneration: true
-        }
-      };
-
-      await powerPointService.generateBulkSlides(
-        bulkData,
-        (current, total, slideName) => {
-          setGenerationProgress(`スライド ${current}/${total} を生成中: ${slideName}`);
+        },
+        (phase, current, total, message) => {
+          setGenerationPhase(phase);
+          setGenerationProgress(message);
+          
+          // フェーズに基づく進捗計算
+          let baseProgress = 0;
+          switch (phase) {
+            case 'analyzing':
+              baseProgress = 0;
+              break;
+            case 'detailing':
+              baseProgress = 10;
+              break;
+            case 'creating':
+              baseProgress = 60;
+              break;
+          }
+          
+          const phaseProgress = (current / total) * (phase === 'detailing' ? 50 : phase === 'creating' ? 40 : 10);
+          setProgressPercentage(baseProgress + phaseProgress);
         }
       );
 
-      setGenerationProgress("スライド生成完了！");
+      setGenerationProgress("✅ スライド生成完了！");
+      setProgressPercentage(100);
       setCurrentStep('completed');
       
       const completionMessage: ChatMessage = {
         id: Date.now().toString(),
-        content: `🎉 PowerPointスライドの生成が完了しました！\n\n生成されたスライド: ${outline.slides.length}枚\nタイトル: ${outline.title}\nテーマ: ${selectedTheme.toUpperCase()}\nフォントサイズ: ${selectedFontSize.toUpperCase()}`,
+        content: `🎉 詳細化されたPowerPointスライドの生成が完了しました！\n\n生成されたスライド: ${outline.slides.length}枚\nタイトル: ${outline.title}\nテーマ: ${selectedTheme.toUpperCase()}\nフォントサイズ: ${selectedFontSize.toUpperCase()}\n\n✨ 各スライドのコンテンツはAIによって詳細化され、説明資料として使用できるレベルに拡張されました。\n\n📋 詳細化の特徴:\n• 具体例とデータを含む詳細な説明\n• 前後のスライドとの一貫性を考慮\n• ビジネス現場で実用的な内容\n• 聴衆が自立して理解できるレベル`,
         timestamp: new Date(),
         type: 'assistant'
       };
@@ -257,6 +299,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
       console.error("Error generating slides:", error);
       setError(error instanceof Error ? error.message : 'スライド生成でエラーが発生しました');
       setCurrentStep('outline');
+      setProgressPercentage(0);
     } finally {
       setIsLoading(false);
     }
@@ -266,6 +309,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
     setCurrentStep('chat');
     setCurrentOutline(null);
     setGenerationProgress("");
+    setProgressPercentage(0);
     setError("");
   };
 
@@ -289,6 +333,29 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
     }
   };
 
+  const handleTestDetailedGeneration = async () => {
+    if (!openAIService) {
+      setError("OpenAI APIの設定を完了してください。");
+      return;
+    }
+
+    setIsLoading(true);
+    setGenerationProgress("詳細化テストを実行中...");
+    
+    try {
+      await powerPointService.testDetailedGeneration(openAIService);
+      setGenerationProgress("詳細化テスト完了！テスト用スライドが作成されました。");
+      
+      setTimeout(() => {
+        setGenerationProgress("");
+      }, 3000);
+    } catch (error) {
+      setError("詳細化テストでエラーが発生しました: " + (error instanceof Error ? error.message : '不明なエラー'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -303,6 +370,15 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
     });
   };
 
+  const getPhaseDisplayName = (phase: GenerationPhase): string => {
+    switch (phase) {
+      case 'analyzing': return '📊 アウトライン分析';
+      case 'detailing': return '📝 コンテンツ詳細化';
+      case 'creating': return '🎨 スライド作成';
+      default: return '処理中';
+    }
+  };
+
   const renderChatMessages = () => (
     <div className={styles.chatMessages}>
       {messages.length === 0 ? (
@@ -310,6 +386,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
           <Text>PowerPointプレゼンテーションの作成についてお聞かせください。</Text>
           <br />
           <Text size={200}>例: "営業戦略についてのプレゼンテーションを作成してください"</Text>
+          <br />
+          <Text size={200}>💡 各スライドは自動的に詳細化され、説明資料として使えるレベルになります</Text>
         </div>
       ) : (
         messages.map((msg) => (
@@ -344,6 +422,39 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
     </div>
   );
 
+  const renderProgressSection = () => {
+    if (!isLoading || currentStep !== 'generating') return null;
+
+    return (
+      <div className={styles.progressSection}>
+        <div className={styles.progressDetails}>
+          <div className={styles.phaseIndicator}>
+            <Text weight="semibold">
+              {getPhaseDisplayName(generationPhase)}
+            </Text>
+            <Text size={200}>
+              ({Math.round(progressPercentage)}%)
+            </Text>
+          </div>
+          
+          <ProgressBar value={progressPercentage} max={100} />
+          
+          <Text size={300}>
+            {generationProgress}
+          </Text>
+          
+          {currentOutline && (
+            <div style={{ marginTop: '12px' }}>
+              <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>
+                処理中: {currentOutline.title} ({currentOutline.slides.length}スライド)
+              </Text>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderChatInput = () => (
     <div className={styles.inputArea}>
       <Field 
@@ -372,6 +483,19 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
           onToggleSettings={() => setShowThemeSettings(!showThemeSettings)}
           isLoading={isLoading}
         />
+        
+        {/* 詳細化テストボタン（開発用） */}
+        {process.env.NODE_ENV === 'development' && (
+          <Button
+            size="small"
+            appearance="subtle"
+            onClick={handleTestDetailedGeneration}
+            disabled={isLoading || !openAIService}
+          >
+            詳細化テスト
+          </Button>
+        )}
+        
         <Button
           className={styles.primaryButton}
           appearance="primary"
@@ -398,16 +522,24 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
       />
 
       {error && (
-        <MessageBar intent="error" style={{ marginBottom: '16px' }}>
-          {error}
-        </MessageBar>
+        <div className={styles.errorCard}>
+          <Text weight="semibold" style={{ color: tokens.colorPaletteRedForeground1 }}>
+            エラーが発生しました
+          </Text>
+          <Text style={{ color: tokens.colorPaletteRedForeground1 }}>
+            {error}
+          </Text>
+        </div>
       )}
 
-      {generationProgress && (
+      {generationProgress && currentStep !== 'generating' && (
         <MessageBar intent="info" style={{ marginBottom: '16px' }}>
           {generationProgress}
         </MessageBar>
       )}
+
+      {/* 詳細化進捗セクション */}
+      {renderProgressSection()}
 
       {/* チャットセクション */}
       {currentStep === 'chat' && (
@@ -415,6 +547,9 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
           <div className={styles.chatHeader}>
             <Chat24Regular />
             <Text weight="semibold" size={400}>PowerPoint Concierge</Text>
+            <Text size={200} style={{ marginLeft: '8px', color: tokens.colorNeutralForeground3 }}>
+              (詳細化機能搭載)
+            </Text>
           </div>
 
           {renderChatMessages()}
