@@ -26,6 +26,8 @@ import { ChatMessage, OpenAISettings, PresentationOutline } from '../types';
 import ThemeSettingsComponent from './ThemeSettings';
 import WorkflowManager, { WorkflowStep } from './WorkflowManager';
 import OutlineEditor from '../outline/OutlineEditor';
+import TemplateSelector from '../template/TemplateSelector';
+import { TemplateInfo, TemplateRecommendation } from '../../../services/powerpoint/template-types';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => Promise<void>;
@@ -132,7 +134,7 @@ const useStyles = makeStyles({
   },
 });
 
-type GenerationPhase = 'analyzing' | 'detailing' | 'creating';
+type GenerationPhase = 'analyzing' | 'detailing' | 'creating' | 'template-selection' | 'outline-adaptation' | 'content-generation' | 'slide-creation';
 
 const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
   const [message, setMessage] = useState<string>("");
@@ -146,6 +148,12 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
   const [generationProgress, setGenerationProgress] = useState<string>("");
   const [generationPhase, setGenerationPhase] = useState<GenerationPhase>('analyzing');
   const [progressPercentage, setProgressPercentage] = useState<number>(0);
+  
+  // テンプレート関連の状態
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateInfo | null>(null);
+  const [templateRecommendations, setTemplateRecommendations] = useState<TemplateRecommendation[]>([]);
+  const [showTemplateSelector, setShowTemplateSelector] = useState<boolean>(false);
+  const [useTemplateGeneration, setUseTemplateGeneration] = useState<boolean>(false);
   
   // テーマ設定
   const [selectedTheme, setSelectedTheme] = useState<'light' | 'dark' | 'colorful'>('light');
@@ -198,6 +206,19 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
       setCurrentOutline(outline);
       setCurrentStep('outline');
 
+      // テンプレート推奨を取得
+      if (message.trim()) {
+        try {
+          const recommendations = await powerPointService.getTemplateRecommendations(message.trim());
+          setTemplateRecommendations(recommendations);
+          if (recommendations.length > 0) {
+            setShowTemplateSelector(true);
+          }
+        } catch (error) {
+          console.error('Failed to get template recommendations:', error);
+        }
+      }
+
       await onSendMessage(userMessage.content);
     } catch (error) {
       console.error("Error calling OpenAI API:", error);
@@ -216,6 +237,24 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
 
   const handleOutlineUpdate = (updatedOutline: PresentationOutline) => {
     setCurrentOutline(updatedOutline);
+  };
+
+  // テンプレート関連のハンドラー
+  const handleTemplateSelect = (template: TemplateInfo) => {
+    setSelectedTemplate(template);
+    setUseTemplateGeneration(true);
+    setShowTemplateSelector(false);
+  };
+
+  const handleTemplateRecommendations = (recommendations: TemplateRecommendation[]) => {
+    setTemplateRecommendations(recommendations);
+  };
+
+  const handleToggleTemplateMode = () => {
+    setUseTemplateGeneration(!useTemplateGeneration);
+    if (!useTemplateGeneration) {
+      setShowTemplateSelector(true);
+    }
   };
 
   const handleRegenerateOutline = async (instruction: string) => {
@@ -249,39 +288,112 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
     setProgressPercentage(0);
 
     try {
-      // 詳細な進捗管理機能を使用
-      await powerPointService.generateSlidesWithDetailedProgress(
-        outline,
-        openAIService,
-        {
-          slideLayout: 'content' as const,
-          theme: selectedTheme,
-          fontSize: selectedFontSize,
-          includeTransitions: false,
-          useThemeAwareGeneration: true
-        },
-        (phase, current, total, message) => {
-          setGenerationPhase(phase);
-          setGenerationProgress(message);
-          
-          // フェーズに基づく進捗計算
-          let baseProgress = 0;
-          switch (phase) {
-            case 'analyzing':
-              baseProgress = 0;
-              break;
-            case 'detailing':
-              baseProgress = 10;
-              break;
-            case 'creating':
-              baseProgress = 60;
-              break;
+      console.log('🔍 生成開始:', { useTemplateGeneration, selectedTemplate: selectedTemplate?.name });
+      
+      // テンプレートが選択されていない場合は通常生成にフォールバック
+      if (useTemplateGeneration && !selectedTemplate) {
+        console.log('⚠️ テンプレートが未選択のため、詳細化生成にフォールバック');
+        setUseTemplateGeneration(false);
+      }
+      
+      // テンプレートが明示的に選択されている場合のみテンプレートベース生成を使用
+      if (useTemplateGeneration && selectedTemplate) {
+        console.log('🎨 テンプレートベース生成を開始');
+        // テンプレートベースの生成
+        await powerPointService.generateSlidesWithTemplate(
+          outline.title || message || "テンプレートベース生成", // 元のユーザー入力
+          outline,
+          openAIService,
+          {
+            slideLayout: 'content' as const,
+            theme: selectedTheme,
+            fontSize: selectedFontSize,
+            includeTransitions: false,
+            useThemeAwareGeneration: true
+          },
+          (phase, current, total, message) => {
+            // phaseが文字列の場合、GenerationPhaseにマッピング
+            let mappedPhase: GenerationPhase;
+            switch (phase) {
+              case 'template-selection':
+                mappedPhase = 'template-selection';
+                break;
+              case 'outline-adaptation':
+                mappedPhase = 'outline-adaptation';
+                break;
+              case 'content-generation':
+                mappedPhase = 'content-generation';
+                break;
+              case 'slide-creation':
+                mappedPhase = 'slide-creation';
+                break;
+              default:
+                mappedPhase = 'analyzing';
+            }
+            
+            setGenerationPhase(mappedPhase);
+            setGenerationProgress(message);
+            
+            // テンプレート生成の進捗計算
+            let baseProgress = 0;
+            switch (phase) {
+              case 'template-selection':
+                baseProgress = 0;
+                break;
+              case 'outline-adaptation':
+                baseProgress = 20;
+                break;
+              case 'content-generation':
+                baseProgress = 40;
+                break;
+              case 'slide-creation':
+                baseProgress = 80;
+                break;
+              default:
+                baseProgress = 0;
+            }
+            
+            const phaseProgress = (current / total) * 20;
+            setProgressPercentage(baseProgress + phaseProgress);
           }
-          
-          const phaseProgress = (current / total) * (phase === 'detailing' ? 50 : phase === 'creating' ? 40 : 10);
-          setProgressPercentage(baseProgress + phaseProgress);
-        }
-      );
+        );
+      } else {
+        console.log('📝 従来の詳細化生成を開始');
+        // 従来の詳細な進捗管理機能を使用
+        await powerPointService.generateSlidesWithDetailedProgress(
+          outline,
+          openAIService,
+          {
+            slideLayout: 'content' as const,
+            theme: selectedTheme,
+            fontSize: selectedFontSize,
+            includeTransitions: false,
+            useThemeAwareGeneration: true
+          },
+          (phase, current, total, message) => {
+            console.log(`📊 進捗: ${phase} ${current}/${total} - ${message}`);
+            setGenerationPhase(phase);
+            setGenerationProgress(message);
+            
+            // フェーズに基づく進捗計算
+            let baseProgress = 0;
+            switch (phase) {
+              case 'analyzing':
+                baseProgress = 0;
+                break;
+              case 'detailing':
+                baseProgress = 10;
+                break;
+              case 'creating':
+                baseProgress = 60;
+                break;
+            }
+            
+            const phaseProgress = (current / total) * (phase === 'detailing' ? 50 : phase === 'creating' ? 40 : 10);
+            setProgressPercentage(baseProgress + phaseProgress);
+          }
+        );
+      }
 
       setGenerationProgress("✅ スライド生成完了！");
       setProgressPercentage(100);
@@ -311,6 +423,11 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
     setGenerationProgress("");
     setProgressPercentage(0);
     setError("");
+    // テンプレート関連の状態もリセット
+    setSelectedTemplate(null);
+    setUseTemplateGeneration(false);
+    setShowTemplateSelector(false);
+    setTemplateRecommendations([]);
   };
 
   const handleTestTheme = async () => {
@@ -375,6 +492,10 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
       case 'analyzing': return '📊 アウトライン分析';
       case 'detailing': return '📝 コンテンツ詳細化';
       case 'creating': return '🎨 スライド作成';
+      case 'template-selection': return '🎯 テンプレート選択';
+      case 'outline-adaptation': return '🔄 アウトライン適応';
+      case 'content-generation': return '📝 コンテンツ最適化';
+      case 'slide-creation': return '🎨 スライド作成';
       default: return '処理中';
     }
   };
@@ -556,6 +677,60 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
           <Divider />
           {renderChatInput()}
         </div>
+      )}
+
+      {/* テンプレート選択セクション */}
+      {showTemplateSelector && (
+        <Card style={{ marginBottom: '16px' }}>
+          <CardHeader>
+            <Text weight="semibold" size={400}>
+              🎨 推奨テンプレート ({templateRecommendations.length}個)
+            </Text>
+            <Button
+              appearance="subtle"
+              onClick={() => setShowTemplateSelector(false)}
+            >
+              閉じる
+            </Button>
+          </CardHeader>
+          <CardPreview>
+            <TemplateSelector
+              userInput={message}
+              onTemplateSelect={handleTemplateSelect}
+              onTemplateRecommendations={handleTemplateRecommendations}
+              selectedTemplateId={selectedTemplate?.id}
+              isVisible={showTemplateSelector}
+            />
+          </CardPreview>
+        </Card>
+      )}
+
+      {/* 選択されたテンプレート表示 */}
+      {selectedTemplate && useTemplateGeneration && (
+        <Card style={{ marginBottom: '16px', backgroundColor: tokens.colorBrandBackground2 }}>
+          <CardHeader>
+            <Text weight="semibold">
+              ✅ 選択中のテンプレート: {selectedTemplate.name}
+            </Text>
+            <Button
+              appearance="subtle"
+              onClick={() => {
+                setSelectedTemplate(null);
+                setUseTemplateGeneration(false);
+              }}
+            >
+              削除
+            </Button>
+          </CardHeader>
+          <CardPreview>
+            <Text size={200}>{selectedTemplate.description}</Text>
+            <Text size={100} style={{ marginTop: '4px', color: tokens.colorNeutralForeground3 }}>
+              スタイル: {selectedTemplate.metadata.presentationStyle} | 
+              対象: {selectedTemplate.metadata.targetAudience} | 
+              目的: {selectedTemplate.metadata.purpose}
+            </Text>
+          </CardPreview>
+        </Card>
       )}
 
       {/* アウトライン編集セクション */}

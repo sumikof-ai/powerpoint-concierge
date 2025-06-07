@@ -33,6 +33,12 @@ export * from './types';
 // テーマ関連型定義
 export * from './theme-types';
 
+// テンプレート関連型定義とサービス
+export * from './template-types';
+export { TemplateAdaptationService } from './template/TemplateAdaptationService';
+export { TemplateBasedGenerationService } from './template/TemplateBasedGenerationService';
+export { TemplatePatternExtractor } from './template/TemplatePatternExtractor';
+
 /**
  * PowerPoint操作のファクトリー関数
  * 使用例: const pptService = createPowerPointService();

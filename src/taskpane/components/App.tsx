@@ -8,10 +8,11 @@ import {
   SelectTabEvent,
   makeStyles
 } from "@fluentui/react-components";
-import { Chat24Regular, Settings24Regular } from "@fluentui/react-icons";
+import { Chat24Regular, Settings24Regular, Apps24Regular } from "@fluentui/react-icons";
 import Header from "./Header";
 import ChatInput from "./chat/ChatInput";
 import Settings from "./Settings";
+import TemplateManager from "./template/TemplateManager";
 import { OpenAISettings } from "./types";
 
 interface AppProps {
@@ -94,6 +95,9 @@ const App: React.FC<AppProps> = (props: AppProps) => {
           <Tab id="chat" value="chat" icon={<Chat24Regular />}>
             チャット
           </Tab>
+          <Tab id="templates" value="templates" icon={<Apps24Regular />}>
+            テンプレート
+          </Tab>
           <Tab id="settings" value="settings" icon={<Settings24Regular />}>
             設定
           </Tab>
@@ -104,6 +108,16 @@ const App: React.FC<AppProps> = (props: AppProps) => {
             <ChatInput 
               onSendMessage={handleSendMessage}
               settings={openAISettings}
+            />
+          )}
+          {selectedTab === "templates" && (
+            <TemplateManager
+              onTemplateCreated={(template) => {
+                console.log('Template created:', template);
+              }}
+              onTemplateDeleted={(templateId) => {
+                console.log('Template deleted:', templateId);
+              }}
             />
           )}
           {selectedTab === "settings" && (

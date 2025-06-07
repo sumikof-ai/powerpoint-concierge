@@ -15,9 +15,17 @@ import { PresentationAnalyzer } from './presentation-analyzer.service';
 import { SlideContentGenerator } from './core/SlideContentGenerator';
 import { PresentationOutline } from '../../taskpane/components/types';
 import { OpenAIService } from '../openai.service';
+import { TemplateBasedGenerationService } from './template/TemplateBasedGenerationService';
+import { TemplateAdaptationService } from './template/TemplateAdaptationService';
+import { 
+  TemplateInfo, 
+  TemplateRecommendation, 
+  AdaptedOutline,
+  TemplateRegistrationRequest 
+} from './template-types';
 
 /**
- * PowerPoint操作のメインサービスクラス（SlideContentGenerator統合版）
+ * PowerPoint操作のメインサービスクラス（テンプレート統合版）
  * 各専門サービスを組み合わせて高レベルな操作を提供
  */
 export class PowerPointService {
@@ -25,6 +33,8 @@ export class PowerPointService {
   private contentRenderer: ContentRenderer;
   private themeApplier: ThemeApplier;
   private presentationAnalyzer: PresentationAnalyzer;
+  private templateBasedService: TemplateBasedGenerationService;
+  private templateAdaptationService: TemplateAdaptationService;
 
   private defaultOptions: SlideGenerationOptions = {
     includeTransitions: false,
@@ -39,6 +49,8 @@ export class PowerPointService {
     this.contentRenderer = new ContentRenderer();
     this.themeApplier = new ThemeApplier();
     this.presentationAnalyzer = new PresentationAnalyzer();
+    this.templateBasedService = new TemplateBasedGenerationService();
+    this.templateAdaptationService = new TemplateAdaptationService();
   }
 
   /**
@@ -137,7 +149,7 @@ export class PowerPointService {
   }
 
   /**
-   * 単一のスライドを作成
+   * 単一のスライドを作成（文字列パラメータ版）
    */
   public async addSlide(title: string, content: string): Promise<void> {
     const slideData: SlideContent = {
@@ -149,6 +161,21 @@ export class PowerPointService {
     const bulkData: BulkSlideData = {
       slides: [slideData],
       options: this.defaultOptions
+    };
+
+    return this.generateBulkSlides(bulkData);
+  }
+
+  /**
+   * 単一のスライドを作成（SlideContentオブジェクト版）
+   */
+  public async addSlideFromContent(
+    slideContent: SlideContent, 
+    options: SlideGenerationOptions = {}
+  ): Promise<void> {
+    const bulkData: BulkSlideData = {
+      slides: [slideContent],
+      options: { ...this.defaultOptions, ...options }
     };
 
     return this.generateBulkSlides(bulkData);
@@ -501,6 +528,232 @@ export class PowerPointService {
     }
 
     return suggestions;
+  }
+
+  // ==================== テンプレート統合機能 ====================
+
+  /**
+   * テンプレートベースのスライド生成
+   */
+  public async generateSlidesWithTemplate(
+    userInput: string,
+    outline: PresentationOutline,
+    openAIService: OpenAIService,
+    options: SlideGenerationOptions = {},
+    onProgress?: (phase: string, current: number, total: number, message: string) => void
+  ): Promise<void> {
+    try {
+      // 1. テンプレート選択
+      if (onProgress) {
+        onProgress('template-selection', 1, 4, 'テンプレートを選択中...');
+      }
+      
+      const recommendations = await this.templateBasedService.selectOptimalTemplate(userInput);
+      
+      if (recommendations.length === 0) {
+        // テンプレートが見つからない場合は従来の方法で生成
+        await this.generateSlidesFromOutline(
+          outline, 
+          openAIService, 
+          options, 
+          onProgress ? (current, total, slideName) => {
+            onProgress('creating', current, total, `スライド作成中: ${slideName}`);
+          } : undefined
+        );
+        return;
+      }
+
+      const selectedTemplate = recommendations[0].template;
+
+      // 2. アウトライン適応
+      if (onProgress) {
+        onProgress('outline-adaptation', 2, 4, 'アウトラインをテンプレートに適応中...');
+      }
+      
+      const adaptedOutline = await this.templateBasedService.adaptOutlineToTemplate(
+        outline,
+        selectedTemplate.id
+      );
+
+      // 3. テンプレート最適化コンテンツ生成
+      if (onProgress) {
+        onProgress('content-generation', 3, 4, 'テンプレート最適化コンテンツを生成中...');
+      }
+      
+      const optimizedSlides = await this.templateBasedService.generateTemplateOptimizedContent(
+        adaptedOutline,
+        openAIService,
+        (current, total, message) => {
+          if (onProgress) {
+            onProgress('content-generation', current, total, message);
+          }
+        }
+      );
+
+      // 4. PowerPointスライド作成
+      if (onProgress) {
+        onProgress('slide-creation', 4, 4, 'PowerPointスライドを作成中...');
+      }
+      
+      await this.createSlidesFromOptimizedContent(optimizedSlides, selectedTemplate, options);
+
+    } catch (error) {
+      console.error('Template-based slide generation failed:', error);
+      // フォールバック: 通常の生成方法
+      await this.generateSlidesFromOutline(
+        outline, 
+        openAIService, 
+        options, 
+        onProgress ? (current, total, slideName) => {
+          onProgress('creating', current, total, `スライド作成中: ${slideName}`);
+        } : undefined
+      );
+    }
+  }
+
+  /**
+   * 現在のプレゼンテーションをテンプレートとして登録
+   */
+  public async registerCurrentPresentationAsTemplate(
+    templateName: string,
+    description: string,
+    metadata: Partial<TemplateRegistrationRequest['metadata']>
+  ): Promise<TemplateInfo> {
+    try {
+      const registrationRequest: TemplateRegistrationRequest = {
+        metadata: {
+          presentationStyle: metadata.presentationStyle || 'formal',
+          targetAudience: metadata.targetAudience || 'general',
+          purpose: metadata.purpose || 'report',
+          tags: [templateName.toLowerCase(), 'user-created', ...(metadata.tags || [])],
+          ...metadata
+        },
+        autoAnalyze: true
+      };
+
+      const template = await this.templateBasedService.registerTemplate(registrationRequest);
+      
+      // 登録されたテンプレートの情報を更新
+      template.name = templateName;
+      template.description = description;
+
+      return template;
+    } catch (error) {
+      console.error('Template registration failed:', error);
+      throw new Error(`テンプレートの登録に失敗しました: ${error.message}`);
+    }
+  }
+
+  /**
+   * テンプレート推奨を取得
+   */
+  public async getTemplateRecommendations(
+    userInput: string,
+    preferences?: {
+      categories?: string[];
+      maxResults?: number;
+    }
+  ): Promise<TemplateRecommendation[]> {
+    try {
+      return await this.templateBasedService.selectOptimalTemplate(userInput, {
+        preferences: {
+          maxResults: preferences?.maxResults || 5,
+          minimumScore: 0.3
+        }
+      });
+    } catch (error) {
+      console.error('Template recommendation failed:', error);
+      return [];
+    }
+  }
+
+  /**
+   * テンプレートライブラリの管理
+   */
+  public getTemplateLibrary() {
+    return this.templateBasedService.getTemplateLibrary();
+  }
+
+  public getPopularTemplates(limit: number = 10) {
+    return this.templateBasedService.getPopularTemplates(limit);
+  }
+
+  public getRecentTemplates(limit: number = 5) {
+    return this.templateBasedService.getRecentTemplates(limit);
+  }
+
+  public searchTemplates(query: string, filters?: any) {
+    return this.templateBasedService.searchTemplates(query, filters);
+  }
+
+  /**
+   * テンプレートフィードバック
+   */
+  public recordTemplateFeedback(
+    templateId: string,
+    rating: number,
+    feedback?: string,
+    success?: boolean
+  ): void {
+    this.templateBasedService.recordTemplateFeedback(templateId, rating, feedback, success);
+  }
+
+  /**
+   * 現在のプレゼンテーションテンプレート検出
+   */
+  public async detectCurrentTemplate(): Promise<TemplateInfo | null> {
+    try {
+      return await this.templateAdaptationService.detectTemplate();
+    } catch (error) {
+      console.error('Template detection failed:', error);
+      return null;
+    }
+  }
+
+  private async createSlidesFromOptimizedContent(
+    optimizedSlides: any[],
+    template: TemplateInfo,
+    options: SlideGenerationOptions
+  ): Promise<void> {
+    return PowerPoint.run(async (context) => {
+      const presentation = context.presentation;
+      
+      for (let i = 0; i < optimizedSlides.length; i++) {
+        const slideContent = optimizedSlides[i];
+        
+        try {
+          // テンプレート情報を考慮したスライド作成
+          const mergedOptions = {
+            ...options,
+            slideLayout: slideContent.layoutSuggestion || options.slideLayout,
+            templateStyle: template.metadata.presentationStyle,
+            templateDensity: template.metadata.contentDensity
+          };
+
+          const slideData: SlideContent = {
+            title: slideContent.title,
+            content: Array.isArray(slideContent.content) ? slideContent.content : [slideContent.content],
+            slideType: slideContent.slideType || 'content',
+            speakerNotes: slideContent.speakerNotes || ''
+          };
+
+          await this.addSlideFromContent(slideData, mergedOptions);
+        } catch (error) {
+          console.error(`Failed to create slide ${i + 1} from optimized content:`, error);
+          
+          // フォールバック: 基本的なスライド作成
+          const fallbackSlideData: SlideContent = {
+            title: slideContent.title || `スライド ${i + 1}`,
+            content: ['テンプレート最適化でエラーが発生しました'],
+            slideType: 'content'
+          };
+          
+          await this.addSlideFromContent(fallbackSlideData, options);
+        }
+      }
+
+      await context.sync();
+    });
   }
 
   /**
