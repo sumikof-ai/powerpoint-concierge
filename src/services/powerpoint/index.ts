@@ -16,11 +16,7 @@ export { ContentRenderer } from './core/ContentRenderer';
 export { ThemeApplier } from './core/ThemeApplier';
 
 // 専門サービス（既存）
-export { SlideCreator } from './slide-creator.service';
-export { SlideManager } from './slide-manager.service';
 export { PresentationAnalyzer } from './presentation-analyzer.service';
-export { SlideLayoutFactory } from './slide-layout-factory.service';
-export { SlideThemeApplier } from './slide-theme-applier.service';
 
 // 配置とテーマサービス
 export { SmartContentPlacerService } from './smart-content-placer.service';

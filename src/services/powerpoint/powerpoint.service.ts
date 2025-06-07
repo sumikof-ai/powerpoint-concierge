@@ -1,4 +1,4 @@
-// src/services/powerpoint/PowerPointService.ts - リファクタリング版メインサービス
+// src/services/powerpoint/PowerPointService.ts - SlideManager統合版
 /* global PowerPoint */
 
 import {
@@ -12,10 +12,9 @@ import { SlideFactory } from './core/SlideFactory';
 import { ContentRenderer } from './core/ContentRenderer';
 import { ThemeApplier } from './core/ThemeApplier';
 import { PresentationAnalyzer } from './presentation-analyzer.service';
-import { SlideManager } from './slide-manager.service';
 
 /**
- * PowerPoint操作のメインサービスクラス（リファクタリング版）
+ * PowerPoint操作のメインサービスクラス（SlideManager統合版）
  * 各専門サービスを組み合わせて高レベルな操作を提供
  */
 export class PowerPointService {
@@ -23,7 +22,6 @@ export class PowerPointService {
   private contentRenderer: ContentRenderer;
   private themeApplier: ThemeApplier;
   private presentationAnalyzer: PresentationAnalyzer;
-  private slideManager: SlideManager;
 
   private defaultOptions: SlideGenerationOptions = {
     includeTransitions: false,
@@ -38,7 +36,6 @@ export class PowerPointService {
     this.contentRenderer = new ContentRenderer();
     this.themeApplier = new ThemeApplier();
     this.presentationAnalyzer = new PresentationAnalyzer();
-    this.slideManager = new SlideManager();
   }
 
   /**
@@ -109,17 +106,83 @@ export class PowerPointService {
   }
 
   /**
-   * 指定したスライドのコンテンツを更新
+   * 指定したスライドのコンテンツを更新（SlideManager機能を統合）
    */
   public async updateSlide(slideIndex: number, title: string, content: string): Promise<void> {
-    return this.slideManager.updateSlide(slideIndex, title, content);
+    return new Promise((resolve, reject) => {
+      PowerPoint.run(async (context) => {
+        try {
+          const slides = context.presentation.slides;
+          slides.load("items");
+          await context.sync();
+
+          if (slideIndex >= slides.items.length) {
+            throw new Error(`スライド ${slideIndex + 1} が見つかりません`);
+          }
+
+          const slide = slides.items[slideIndex];
+          
+          // 既存のテキストボックスをクリア
+          await this.clearSlideTextBoxes(context, slide);
+
+          // 新しいコンテンツで再作成
+          const slideData: SlideContent = {
+            title,
+            content: this.parseContentString(content),
+            slideType: 'content'
+          };
+
+          // ContentRendererを使用してスライドをレンダリング
+          await this.contentRenderer.renderContentSlide(
+            context, 
+            slide, 
+            slideData, 
+            this.defaultOptions
+          );
+
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
   }
 
   /**
-   * 指定したスライドを削除
+   * 指定したスライドを削除（SlideManager機能を統合）
    */
   public async deleteSlide(slideIndex: number): Promise<void> {
-    return this.slideManager.deleteSlide(slideIndex);
+    return new Promise((resolve, reject) => {
+      PowerPoint.run(async (context) => {
+        try {
+          const slides = context.presentation.slides;
+          slides.load("items");
+          await context.sync();
+
+          if (slideIndex >= slides.items.length) {
+            throw new Error(`スライド ${slideIndex + 1} が見つかりません`);
+          }
+
+          slides.items[slideIndex].delete();
+          await context.sync();
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+  }
+
+  /**
+   * スライド間にトランジションを追加（SlideManager機能を統合）
+   * 注意: PowerPoint.js では現在トランジション機能のサポートが限定的
+   */
+  public async addTransitions(transitionType: 'fade' | 'slide' | 'none' = 'fade'): Promise<void> {
+    return new Promise((resolve) => {
+      console.log(`トランジション設定をリクエストしました: ${transitionType}`);
+      console.log('注意: PowerPoint.js では現在トランジション機能のサポートが限定的です');
+      resolve();
+    });
   }
 
   /**
@@ -183,6 +246,24 @@ export class PowerPointService {
 
       await this.generateBulkSlides(bulkData);
     }
+  }
+
+  /**
+   * スライドのテキストボックスをクリア（SlideManager機能を統合）
+   */
+  private async clearSlideTextBoxes(context: PowerPoint.RequestContext, slide: PowerPoint.Slide): Promise<void> {
+    slide.shapes.load("items");
+    await context.sync();
+
+    // 既存のテキストボックスをクリア
+    for (let i = slide.shapes.items.length - 1; i >= 0; i--) {
+      const shape = slide.shapes.items[i];
+      if (shape.type === PowerPoint.ShapeType.textBox) {
+        shape.delete();
+      }
+    }
+
+    await context.sync();
   }
 
   /**
