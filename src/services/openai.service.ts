@@ -1,6 +1,6 @@
 // src/services/openai.service.ts
 import { OpenAISettings, OpenAIRequest, OpenAIResponse, APIError } from '../taskpane/components/types';
-import { PresentationOutline, SlideOutline } from '../taskpane/components/OutlineEditor';
+import { PresentationOutline, SlideOutline } from '../taskpane/components/types';
 
 export class OpenAIService {
   private settings: OpenAISettings;

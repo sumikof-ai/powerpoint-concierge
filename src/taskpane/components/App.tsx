@@ -10,7 +10,7 @@ import {
 } from "@fluentui/react-components";
 import { Chat24Regular, Settings24Regular } from "@fluentui/react-icons";
 import Header from "./Header";
-import ChatInput from "./ChatInput";
+import ChatInput from "./chat/ChatInput";
 import Settings from "./Settings";
 import { OpenAISettings } from "./types";
 
