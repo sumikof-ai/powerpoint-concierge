@@ -27,6 +27,7 @@ import ThemeSettingsComponent from './ThemeSettings';
 import WorkflowManager, { WorkflowStep } from './WorkflowManager';
 import OutlineEditor from '../outline/OutlineEditor';
 import TemplateSelector from '../template/TemplateSelector';
+import TemplateManager from '../template/TemplateManager';
 import { TemplateInfo, TemplateRecommendation } from '../../../services/powerpoint/template-types';
 
 interface ChatInputProps {
@@ -153,6 +154,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateInfo | null>(null);
   const [templateRecommendations, setTemplateRecommendations] = useState<TemplateRecommendation[]>([]);
   const [showTemplateSelector, setShowTemplateSelector] = useState<boolean>(false);
+  const [showTemplateManager, setShowTemplateManager] = useState<boolean>(false);
   const [useTemplateGeneration, setUseTemplateGeneration] = useState<boolean>(false);
   
   // テーマ設定
@@ -427,6 +429,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
     setSelectedTemplate(null);
     setUseTemplateGeneration(false);
     setShowTemplateSelector(false);
+    setShowTemplateManager(false);
     setTemplateRecommendations([]);
   };
 
@@ -605,6 +608,16 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
           isLoading={isLoading}
         />
         
+        {/* テンプレート管理ボタン */}
+        <Button
+          size="small"
+          appearance="subtle"
+          onClick={() => setShowTemplateManager(!showTemplateManager)}
+          disabled={isLoading}
+        >
+          テンプレート管理
+        </Button>
+
         {/* 詳細化テストボタン（開発用） */}
         {process.env.NODE_ENV === 'development' && (
           <Button
@@ -681,17 +694,35 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
 
       {/* テンプレート選択セクション */}
       {showTemplateSelector && (
-        <Card style={{ marginBottom: '16px' }}>
+        <Card style={{ marginBottom: '16px', border: `2px solid ${tokens.colorBrandStroke1}` }}>
           <CardHeader>
-            <Text weight="semibold" size={400}>
-              🎨 推奨テンプレート ({templateRecommendations.length}個)
-            </Text>
-            <Button
-              appearance="subtle"
-              onClick={() => setShowTemplateSelector(false)}
-            >
-              閉じる
-            </Button>
+            <div>
+              <Text weight="semibold" size={400}>
+                🎨 テンプレート選択 ({templateRecommendations.length}個推奨)
+              </Text>
+              <Text size={200} style={{ color: tokens.colorNeutralForeground3, marginTop: '4px' }}>
+                ⚠️ テンプレートを選択すると、AI詳細化の代わりにテンプレート最適化が実行されます
+              </Text>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Button
+                appearance="secondary"
+                size="small"
+                onClick={() => {
+                  setSelectedTemplate(null);
+                  setUseTemplateGeneration(false);
+                  setShowTemplateSelector(false);
+                }}
+              >
+                詳細化を使用
+              </Button>
+              <Button
+                appearance="subtle"
+                onClick={() => setShowTemplateSelector(false)}
+              >
+                閉じる
+              </Button>
+            </div>
           </CardHeader>
           <CardPreview>
             <TemplateSelector
@@ -707,19 +738,25 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
 
       {/* 選択されたテンプレート表示 */}
       {selectedTemplate && useTemplateGeneration && (
-        <Card style={{ marginBottom: '16px', backgroundColor: tokens.colorBrandBackground2 }}>
+        <Card style={{ marginBottom: '16px', backgroundColor: tokens.colorBrandBackground2, border: `2px solid ${tokens.colorBrandStroke2}` }}>
           <CardHeader>
-            <Text weight="semibold">
-              ✅ 選択中のテンプレート: {selectedTemplate.name}
-            </Text>
+            <div>
+              <Text weight="semibold">
+                ✅ テンプレートモード: {selectedTemplate.name}
+              </Text>
+              <Text size={200} style={{ color: tokens.colorNeutralForeground3, marginTop: '4px' }}>
+                🔄 AI詳細化は行われず、テンプレート最適化が実行されます
+              </Text>
+            </div>
             <Button
-              appearance="subtle"
+              appearance="secondary"
+              size="small"
               onClick={() => {
                 setSelectedTemplate(null);
                 setUseTemplateGeneration(false);
               }}
             >
-              削除
+              詳細化に変更
             </Button>
           </CardHeader>
           <CardPreview>
@@ -731,6 +768,20 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
             </Text>
           </CardPreview>
         </Card>
+      )}
+
+      {/* テンプレート管理セクション */}
+      {showTemplateManager && (
+        <TemplateManager
+          onTemplateCreated={(template) => {
+            console.log('Template created:', template);
+            // 新しいテンプレートが作成されたときの処理
+          }}
+          onTemplateDeleted={(templateId) => {
+            console.log('Template deleted:', templateId);
+            // テンプレートが削除されたときの処理
+          }}
+        />
       )}
 
       {/* アウトライン編集セクション */}

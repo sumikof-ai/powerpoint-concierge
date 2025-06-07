@@ -264,6 +264,35 @@ const TemplateManager: React.FC<TemplateManagerProps> = ({
 
   return (
     <div className={styles.container}>
+      {/* 使い方ガイド */}
+      <Card style={{ marginBottom: '16px', backgroundColor: tokens.colorNeutralBackground3 }}>
+        <CardHeader>
+          <Text weight="semibold">📋 テンプレートの用意の仕方</Text>
+        </CardHeader>
+        <div style={{ padding: '16px' }}>
+          <Text size={200}>
+            <strong>Step 1:</strong> PowerPointで理想的なプレゼンテーションを作成<br />
+            • デザイン、レイアウト、色合いを設定<br />
+            • スライドマスターやテーマを調整<br />
+            • 数枚のサンプルスライドを作成<br /><br />
+            
+            <strong>Step 2:</strong> 「現在のプレゼンテーションをテンプレート化」をクリック<br />
+            • システムが自動的にデザインパターンを分析<br />
+            • レイアウト構造とスタイルを抽出<br /><br />
+            
+            <strong>Step 3:</strong> テンプレート情報を入力<br />
+            • わかりやすい名前と説明を入力<br />
+            • カテゴリ、スタイル、対象聴衆を選択<br />
+            • 検索用のタグを設定<br /><br />
+            
+            <strong>Step 4:</strong> 今後の利用<br />
+            • アウトライン生成後に推奨テンプレートとして表示<br />
+            • AI詳細化の代わりにテンプレート最適化を実行<br />
+            • 一貫性のあるデザインでプレゼンテーションを生成
+          </Text>
+        </div>
+      </Card>
+
       <div className={styles.header}>
         <Title3>テンプレート管理</Title3>
         

@@ -14,6 +14,7 @@ import {
   DocumentAdd24Regular,
   Edit24Regular,
   ArrowRight24Regular,
+  ArrowRight16Regular,
   CheckmarkCircle24Regular,
   Settings24Regular,
 } from "@fluentui/react-icons";
@@ -34,21 +35,28 @@ interface WorkflowManagerProps {
 const useStyles = makeStyles({
   stepIndicator: {
     display: "flex",
-    alignItems: "center",
-    gap: "8px",
+    flexDirection: "column",
+    gap: "12px",
     padding: "12px",
     backgroundColor: tokens.colorNeutralBackground2,
     borderRadius: tokens.borderRadiusMedium,
     marginBottom: "16px",
   },
+  stepInfo: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+  },
   stepChain: {
     display: "flex",
     alignItems: "center",
-    gap: "8px",
-    marginLeft: "auto",
+    gap: "6px",
+    flexWrap: "wrap",
+    justifyContent: "center",
   },
   stepBadge: {
     fontSize: tokens.fontSizeBase200,
+    whiteSpace: "nowrap",
   },
   progressSection: {
     padding: "24px",
@@ -68,11 +76,21 @@ const useStyles = makeStyles({
   },
   actionButtons: {
     display: 'flex',
-    gap: '12px',
+    flexDirection: 'column',
+    gap: '8px',
     marginTop: '16px',
+    width: '100%',
+    '@media (min-width: 400px)': {
+      flexDirection: 'row',
+      gap: '12px',
+    },
+  },
+  actionButton: {
+    flex: 1,
+    minWidth: '0',
   },
   presentationCard: {
-    maxWidth: "400px",
+    maxWidth: "100%",
     width: "100%",
   },
   enhancementHighlight: {
@@ -84,14 +102,19 @@ const useStyles = makeStyles({
   featureList: {
     display: "flex",
     flexDirection: "column",
-    gap: "4px",
+    gap: "6px",
     textAlign: "left",
     marginTop: "8px",
   },
   featureItem: {
     display: "flex",
-    alignItems: "center",
-    gap: "6px",
+    alignItems: "flex-start",
+    gap: "8px",
+    lineHeight: "1.4",
+  },
+  featureIcon: {
+    marginTop: "2px",
+    flexShrink: 0,
   },
 });
 
@@ -156,7 +179,7 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
             >
               {step.label}
             </Badge>
-            {index < steps.length - 1 && <ArrowRight24Regular />}
+            {index < steps.length - 1 && <ArrowRight16Regular />}
           </React.Fragment>
         ))}
       </div>
@@ -165,12 +188,14 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
 
   const renderStepIndicator = () => (
     <div className={styles.stepIndicator}>
-      <Text weight="semibold">
-        現在のステップ: {getStepTitle(currentStep)}
-      </Text>
-      <Text size={300} style={{ flex: 1 }}>
-        {getStepDescription(currentStep)}
-      </Text>
+      <div className={styles.stepInfo}>
+        <Text weight="semibold">
+          現在のステップ: {getStepTitle(currentStep)}
+        </Text>
+        <Text size={300}>
+          {getStepDescription(currentStep)}
+        </Text>
+      </div>
       {renderStepChain()}
     </div>
   );
@@ -194,19 +219,19 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
               <Text weight="semibold" size={300}>🚀 AI詳細化機能</Text>
               <div className={styles.featureList}>
                 <div className={styles.featureItem}>
-                  <CheckmarkCircle24Regular />
+                  <CheckmarkCircle24Regular className={styles.featureIcon} />
                   <Text size={200}>各スライドを個別に詳細化</Text>
                 </div>
                 <div className={styles.featureItem}>
-                  <CheckmarkCircle24Regular />
+                  <CheckmarkCircle24Regular className={styles.featureIcon} />
                   <Text size={200}>説明資料レベルのコンテンツ</Text>
                 </div>
                 <div className={styles.featureItem}>
-                  <CheckmarkCircle24Regular />
+                  <CheckmarkCircle24Regular className={styles.featureIcon} />
                   <Text size={200}>前後スライドとの一貫性を保持</Text>
                 </div>
                 <div className={styles.featureItem}>
-                  <CheckmarkCircle24Regular />
+                  <CheckmarkCircle24Regular className={styles.featureIcon} />
                   <Text size={200}>具体例・データを自動追加</Text>
                 </div>
               </div>
@@ -235,19 +260,19 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
               <Text weight="semibold" size={300}>✨ 詳細化の成果</Text>
               <div className={styles.featureList}>
                 <div className={styles.featureItem}>
-                  <CheckmarkCircle24Regular />
+                  <CheckmarkCircle24Regular className={styles.featureIcon} />
                   <Text size={200}>全スライドが説明資料レベルに詳細化</Text>
                 </div>
                 <div className={styles.featureItem}>
-                  <CheckmarkCircle24Regular />
+                  <CheckmarkCircle24Regular className={styles.featureIcon} />
                   <Text size={200}>聴衆の自立理解を促進する内容</Text>
                 </div>
                 <div className={styles.featureItem}>
-                  <CheckmarkCircle24Regular />
+                  <CheckmarkCircle24Regular className={styles.featureIcon} />
                   <Text size={200}>ビジネス現場で即使用可能</Text>
                 </div>
                 <div className={styles.featureItem}>
-                  <CheckmarkCircle24Regular />
+                  <CheckmarkCircle24Regular className={styles.featureIcon} />
                   <Text size={200}>一貫性のある高品質なデザイン</Text>
                 </div>
               </div>
@@ -261,15 +286,17 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
           appearance="primary"
           icon={<DocumentAdd24Regular />}
           onClick={onStartNewPresentation}
+          className={styles.actionButton}
         >
-          新しいプレゼンテーションを作成
+          新しいプレゼンテーション
         </Button>
         <Button
           appearance="secondary"
           icon={<Edit24Regular />}
           onClick={onEditOutline}
+          className={styles.actionButton}
         >
-          アウトラインを再編集
+          アウトライン編集
         </Button>
         <Button
           appearance="subtle"
@@ -278,6 +305,7 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
             // 設定画面への遷移や詳細設定の表示
             console.log('詳細設定を開く');
           }}
+          className={styles.actionButton}
         >
           詳細設定
         </Button>
@@ -330,20 +358,20 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
           </Text>
           <div className={styles.featureList}>
             <div className={styles.featureItem}>
-              <CheckmarkCircle24Regular />
+              <CheckmarkCircle24Regular className={styles.featureIcon} />
               <Text size={200}>AIによる3段階生成（アウトライン→詳細化→PowerPoint）</Text>
             </div>
             <div className={styles.featureItem}>
-              <CheckmarkCircle24Regular />
+              <CheckmarkCircle24Regular className={styles.featureIcon} />
               <Text size={200}>説明資料として使える詳細なコンテンツ</Text>
             </div>
             <div className={styles.featureItem}>
-              <CheckmarkCircle24Regular />
-              <Text size={200}>テーマとフォントサイズの自動適用</Text>
+              <CheckmarkCircle24Regular className={styles.featureIcon} />
+              <Text size={200}>テーマ設定（色・フォント）の自動適用</Text>
             </div>
             <div className={styles.featureItem}>
-              <CheckmarkCircle24Regular />
-              <Text size={200}>エラー時の自動フォールバック機能</Text>
+              <CheckmarkCircle24Regular className={styles.featureIcon} />
+              <Text size={200}>テンプレート選択（レイアウト）も選択可能</Text>
             </div>
           </div>
         </CardPreview>

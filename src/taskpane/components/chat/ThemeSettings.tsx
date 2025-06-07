@@ -155,7 +155,10 @@ export const ThemeSettingsComponent: React.FC<ThemeSettingsProps> = ({
       {/* テーマ設定パネル */}
       {showSettings && (
         <div className={styles.themeSection}>
-          <Label weight="semibold">プレゼンテーションの外観設定</Label>
+          <Label weight="semibold">テーマ設定（色・フォント）</Label>
+          <Text size={200} style={{ color: tokens.colorNeutralForeground3, marginTop: '4px' }}>
+            ✅ AI詳細化機能と組み合わせて使用されます
+          </Text>
           
           <div className={styles.themeControls}>
             <Field label="テーマ">
