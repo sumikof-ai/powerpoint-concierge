@@ -1,10 +1,10 @@
 // src/taskpane/components/chat/ChatInput.tsx - SlideContentGenerator統合版
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { 
-  Button, 
-  Field, 
-  Textarea, 
+import {
+  Button,
+  Field,
+  Textarea,
   Text,
   Card,
   CardHeader,
@@ -13,22 +13,19 @@ import {
   Spinner,
   MessageBar,
   ProgressBar,
-  tokens, 
+  tokens,
   makeStyles,
 } from "@fluentui/react-components";
-import { 
-  Send24Regular, 
-  Chat24Regular,
-} from "@fluentui/react-icons";
-import { OpenAIService } from '../../../services/openai.service';
-import { PowerPointService } from '../../../services/powerpoint'; 
-import { ChatMessage, OpenAISettings, PresentationOutline } from '../types';
-import ThemeSettingsComponent from './ThemeSettings';
-import WorkflowManager, { WorkflowStep } from './WorkflowManager';
-import OutlineEditor from '../outline/OutlineEditor';
-import TemplateSelector from '../template/TemplateSelector';
-import TemplateManager from '../template/TemplateManager';
-import { TemplateInfo, TemplateRecommendation } from '../../../services/powerpoint/template-types';
+import { Send24Regular, Chat24Regular } from "@fluentui/react-icons";
+import { OpenAIService } from "../../../services/openai.service";
+import { PowerPointService } from "../../../services/powerpoint";
+import { ChatMessage, OpenAISettings, PresentationOutline } from "../types";
+import ThemeSettingsComponent from "./ThemeSettings";
+import WorkflowManager, { WorkflowStep } from "./WorkflowManager";
+import OutlineEditor from "../outline/OutlineEditor";
+import TemplateSelector from "../template/TemplateSelector";
+import TemplateManager from "../template/TemplateManager";
+import { TemplateInfo, TemplateRecommendation } from "../../../services/powerpoint/template-types";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => Promise<void>;
@@ -135,7 +132,14 @@ const useStyles = makeStyles({
   },
 });
 
-type GenerationPhase = 'analyzing' | 'detailing' | 'creating' | 'template-selection' | 'outline-adaptation' | 'content-generation' | 'slide-creation';
+type GenerationPhase =
+  | "analyzing"
+  | "detailing"
+  | "creating"
+  | "template-selection"
+  | "outline-adaptation"
+  | "content-generation"
+  | "slide-creation";
 
 const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
   const [message, setMessage] = useState<string>("");
@@ -144,24 +148,26 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
   const [openAIService, setOpenAIService] = useState<OpenAIService | null>(null);
   const [powerPointService] = useState<PowerPointService>(new PowerPointService());
   const [error, setError] = useState<string>("");
-  const [currentStep, setCurrentStep] = useState<WorkflowStep>('chat');
+  const [currentStep, setCurrentStep] = useState<WorkflowStep>("chat");
   const [currentOutline, setCurrentOutline] = useState<PresentationOutline | null>(null);
   const [generationProgress, setGenerationProgress] = useState<string>("");
-  const [generationPhase, setGenerationPhase] = useState<GenerationPhase>('analyzing');
+  const [generationPhase, setGenerationPhase] = useState<GenerationPhase>("analyzing");
   const [progressPercentage, setProgressPercentage] = useState<number>(0);
-  
+
   // テンプレート関連の状態
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateInfo | null>(null);
-  const [templateRecommendations, setTemplateRecommendations] = useState<TemplateRecommendation[]>([]);
+  const [templateRecommendations, setTemplateRecommendations] = useState<TemplateRecommendation[]>(
+    []
+  );
   const [showTemplateSelector, setShowTemplateSelector] = useState<boolean>(false);
   const [showTemplateManager, setShowTemplateManager] = useState<boolean>(false);
   const [useTemplateGeneration, setUseTemplateGeneration] = useState<boolean>(false);
-  
+
   // テーマ設定
-  const [selectedTheme, setSelectedTheme] = useState<'light' | 'dark' | 'colorful'>('light');
-  const [selectedFontSize, setSelectedFontSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [selectedTheme, setSelectedTheme] = useState<"light" | "dark" | "colorful">("light");
+  const [selectedFontSize, setSelectedFontSize] = useState<"small" | "medium" | "large">("medium");
   const [showThemeSettings, setShowThemeSettings] = useState<boolean>(false);
-  
+
   const styles = useStyles();
 
   // OpenAI設定が変更されたときにサービスを更新
@@ -186,38 +192,40 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
       id: Date.now().toString(),
       content: message.trim(),
       timestamp: new Date(),
-      type: 'user'
+      type: "user",
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setMessage("");
     setIsLoading(true);
     setError("");
 
     try {
       const outline = await openAIService.generateStructuredOutline(userMessage.content);
-      
+
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         content: `✅ アウトラインを生成しました！\n\nタイトル: ${outline.title}\nスライド数: ${outline.slides.length}\n予想時間: ${outline.estimatedDuration}分\n\n「アウトライン編集」タブで内容を確認・編集してください。\n\n💡 スライド生成時は、各スライドのコンテンツがAIによって詳細化され、説明資料として使用できるレベルに拡張されます。`,
         timestamp: new Date(),
-        type: 'assistant'
+        type: "assistant",
       };
-      
-      setMessages(prev => [...prev, assistantMessage]);
+
+      setMessages((prev) => [...prev, assistantMessage]);
       setCurrentOutline(outline);
-      setCurrentStep('outline');
+      setCurrentStep("outline");
 
       // テンプレート推奨を取得
       if (message.trim()) {
         try {
-          const recommendations = await powerPointService.getTemplateRecommendations(message.trim());
+          const recommendations = await powerPointService.getTemplateRecommendations(
+            message.trim()
+          );
           setTemplateRecommendations(recommendations);
           if (recommendations.length > 0) {
             setShowTemplateSelector(true);
           }
         } catch (error) {
-          console.error('Failed to get template recommendations:', error);
+          console.error("Failed to get template recommendations:", error);
         }
       }
 
@@ -226,12 +234,12 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
       console.error("Error calling OpenAI API:", error);
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        content: `エラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}`,
+        content: `エラーが発生しました: ${error instanceof Error ? error.message : "不明なエラー"}`,
         timestamp: new Date(),
-        type: 'assistant'
+        type: "assistant",
       };
-      setMessages(prev => [...prev, errorMessage]);
-      setError(error instanceof Error ? error.message : '不明なエラーが発生しました');
+      setMessages((prev) => [...prev, errorMessage]);
+      setError(error instanceof Error ? error.message : "不明なエラーが発生しました");
     } finally {
       setIsLoading(false);
     }
@@ -266,16 +274,16 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
     try {
       const newOutline = await openAIService.regenerateOutline(currentOutline, instruction);
       setCurrentOutline(newOutline);
-      
+
       const regenerationMessage: ChatMessage = {
         id: Date.now().toString(),
         content: `🔄 アウトラインを再生成しました！\n\n指示: ${instruction}\n\n新しいタイトル: ${newOutline.title}\nスライド数: ${newOutline.slides.length}`,
         timestamp: new Date(),
-        type: 'assistant'
+        type: "assistant",
       };
-      setMessages(prev => [...prev, regenerationMessage]);
+      setMessages((prev) => [...prev, regenerationMessage]);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'アウトライン再生成でエラーが発生しました');
+      setError(error instanceof Error ? error.message : "アウトライン再生成でエラーが発生しました");
     } finally {
       setIsLoading(false);
     }
@@ -284,114 +292,118 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
   const handleGenerateSlides = async (outline: PresentationOutline) => {
     if (!outline || !openAIService) return;
 
-    setCurrentStep('generating');
+    setCurrentStep("generating");
     setIsLoading(true);
     setGenerationProgress("詳細化プロセスを開始します...");
     setProgressPercentage(0);
 
     try {
-      console.log('🔍 生成開始:', { useTemplateGeneration, selectedTemplate: selectedTemplate?.name });
-      
+      console.log("🔍 生成開始:", {
+        useTemplateGeneration,
+        selectedTemplate: selectedTemplate?.name,
+      });
+
       // テンプレートが選択されていない場合は通常生成にフォールバック
       if (useTemplateGeneration && !selectedTemplate) {
-        console.log('⚠️ テンプレートが未選択のため、詳細化生成にフォールバック');
+        console.log("⚠️ テンプレートが未選択のため、詳細化生成にフォールバック");
         setUseTemplateGeneration(false);
       }
-      
+
       // テンプレートが明示的に選択されている場合のみテンプレートベース生成を使用
       if (useTemplateGeneration && selectedTemplate) {
-        console.log('🎨 テンプレートベース生成を開始');
+        console.log("🎨 テンプレートベース生成を開始");
         // テンプレートベースの生成
         await powerPointService.generateSlidesWithTemplate(
           outline.title || message || "テンプレートベース生成", // 元のユーザー入力
           outline,
           openAIService,
           {
-            slideLayout: 'content' as const,
+            slideLayout: "content" as const,
             theme: selectedTheme,
             fontSize: selectedFontSize,
             includeTransitions: false,
-            useThemeAwareGeneration: true
+            useThemeAwareGeneration: true,
           },
           (phase, current, total, message) => {
             // phaseが文字列の場合、GenerationPhaseにマッピング
             let mappedPhase: GenerationPhase;
             switch (phase) {
-              case 'template-selection':
-                mappedPhase = 'template-selection';
+              case "template-selection":
+                mappedPhase = "template-selection";
                 break;
-              case 'outline-adaptation':
-                mappedPhase = 'outline-adaptation';
+              case "outline-adaptation":
+                mappedPhase = "outline-adaptation";
                 break;
-              case 'content-generation':
-                mappedPhase = 'content-generation';
+              case "content-generation":
+                mappedPhase = "content-generation";
                 break;
-              case 'slide-creation':
-                mappedPhase = 'slide-creation';
+              case "slide-creation":
+                mappedPhase = "slide-creation";
                 break;
               default:
-                mappedPhase = 'analyzing';
+                mappedPhase = "analyzing";
             }
-            
+
             setGenerationPhase(mappedPhase);
             setGenerationProgress(message);
-            
+
             // テンプレート生成の進捗計算
             let baseProgress = 0;
             switch (phase) {
-              case 'template-selection':
+              case "template-selection":
                 baseProgress = 0;
                 break;
-              case 'outline-adaptation':
+              case "outline-adaptation":
                 baseProgress = 20;
                 break;
-              case 'content-generation':
+              case "content-generation":
                 baseProgress = 40;
                 break;
-              case 'slide-creation':
+              case "slide-creation":
                 baseProgress = 80;
                 break;
               default:
                 baseProgress = 0;
             }
-            
+
             const phaseProgress = (current / total) * 20;
             setProgressPercentage(baseProgress + phaseProgress);
           }
         );
       } else {
-        console.log('📝 従来の詳細化生成を開始');
+        console.log("📝 従来の詳細化生成を開始");
         // 従来の詳細な進捗管理機能を使用
         await powerPointService.generateSlidesWithDetailedProgress(
           outline,
           openAIService,
           {
-            slideLayout: 'content' as const,
+            slideLayout: "content" as const,
             theme: selectedTheme,
             fontSize: selectedFontSize,
             includeTransitions: false,
-            useThemeAwareGeneration: true
+            useThemeAwareGeneration: true,
           },
           (phase, current, total, message) => {
             console.log(`📊 進捗: ${phase} ${current}/${total} - ${message}`);
             setGenerationPhase(phase);
             setGenerationProgress(message);
-            
+
             // フェーズに基づく進捗計算
             let baseProgress = 0;
             switch (phase) {
-              case 'analyzing':
+              case "analyzing":
                 baseProgress = 0;
                 break;
-              case 'detailing':
+              case "detailing":
                 baseProgress = 10;
                 break;
-              case 'creating':
+              case "creating":
                 baseProgress = 60;
                 break;
             }
-            
-            const phaseProgress = (current / total) * (phase === 'detailing' ? 50 : phase === 'creating' ? 40 : 10);
+
+            const phaseProgress =
+              (current / total) * (phase === "detailing" ? 50 : phase === "creating" ? 40 : 10);
             setProgressPercentage(baseProgress + phaseProgress);
           }
         );
@@ -399,20 +411,19 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
 
       setGenerationProgress("✅ スライド生成完了！");
       setProgressPercentage(100);
-      setCurrentStep('completed');
-      
+      setCurrentStep("completed");
+
       const completionMessage: ChatMessage = {
         id: Date.now().toString(),
         content: `🎉 詳細化されたPowerPointスライドの生成が完了しました！\n\n生成されたスライド: ${outline.slides.length}枚\nタイトル: ${outline.title}\nテーマ: ${selectedTheme.toUpperCase()}\nフォントサイズ: ${selectedFontSize.toUpperCase()}\n\n✨ 各スライドのコンテンツはAIによって詳細化され、説明資料として使用できるレベルに拡張されました。\n\n📋 詳細化の特徴:\n• 具体例とデータを含む詳細な説明\n• 前後のスライドとの一貫性を考慮\n• ビジネス現場で実用的な内容\n• 聴衆が自立して理解できるレベル`,
         timestamp: new Date(),
-        type: 'assistant'
+        type: "assistant",
       };
-      setMessages(prev => [...prev, completionMessage]);
-
+      setMessages((prev) => [...prev, completionMessage]);
     } catch (error) {
       console.error("Error generating slides:", error);
-      setError(error instanceof Error ? error.message : 'スライド生成でエラーが発生しました');
-      setCurrentStep('outline');
+      setError(error instanceof Error ? error.message : "スライド生成でエラーが発生しました");
+      setCurrentStep("outline");
       setProgressPercentage(0);
     } finally {
       setIsLoading(false);
@@ -420,7 +431,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
   };
 
   const handleStartNewPresentation = () => {
-    setCurrentStep('chat');
+    setCurrentStep("chat");
     setCurrentOutline(null);
     setGenerationProgress("");
     setProgressPercentage(0);
@@ -435,19 +446,22 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
 
   const handleTestTheme = async () => {
     if (!powerPointService) return;
-    
+
     setIsLoading(true);
     setGenerationProgress("テーマテストスライドを生成中...");
-    
+
     try {
       await powerPointService.testThemeApplication();
       setGenerationProgress("テーマテスト完了！各テーマのスライドが作成されました。");
-      
+
       setTimeout(() => {
         setGenerationProgress("");
       }, 3000);
     } catch (error) {
-      setError("テーマテストでエラーが発生しました: " + (error instanceof Error ? error.message : '不明なエラー'));
+      setError(
+        "テーマテストでエラーが発生しました: " +
+          (error instanceof Error ? error.message : "不明なエラー")
+      );
     } finally {
       setIsLoading(false);
     }
@@ -461,45 +475,56 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
 
     setIsLoading(true);
     setGenerationProgress("詳細化テストを実行中...");
-    
+
     try {
       await powerPointService.testDetailedGeneration(openAIService);
       setGenerationProgress("詳細化テスト完了！テスト用スライドが作成されました。");
-      
+
       setTimeout(() => {
         setGenerationProgress("");
       }, 3000);
     } catch (error) {
-      setError("詳細化テストでエラーが発生しました: " + (error instanceof Error ? error.message : '不明なエラー'));
+      setError(
+        "詳細化テストでエラーが発生しました: " +
+          (error instanceof Error ? error.message : "不明なエラー")
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       handleSendMessage();
     }
   };
 
   const formatTimestamp = (timestamp: Date) => {
-    return timestamp.toLocaleTimeString('ja-JP', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return timestamp.toLocaleTimeString("ja-JP", {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const getPhaseDisplayName = (phase: GenerationPhase): string => {
     switch (phase) {
-      case 'analyzing': return '📊 アウトライン分析';
-      case 'detailing': return '📝 コンテンツ詳細化';
-      case 'creating': return '🎨 スライド作成';
-      case 'template-selection': return '🎯 テンプレート選択';
-      case 'outline-adaptation': return '🔄 アウトライン適応';
-      case 'content-generation': return '📝 コンテンツ最適化';
-      case 'slide-creation': return '🎨 スライド作成';
-      default: return '処理中';
+      case "analyzing":
+        return "📊 アウトライン分析";
+      case "detailing":
+        return "📝 コンテンツ詳細化";
+      case "creating":
+        return "🎨 スライド作成";
+      case "template-selection":
+        return "🎯 テンプレート選択";
+      case "outline-adaptation":
+        return "🔄 アウトライン適応";
+      case "content-generation":
+        return "📝 コンテンツ最適化";
+      case "slide-creation":
+        return "🎨 スライド作成";
+      default:
+        return "処理中";
     }
   };
 
@@ -511,24 +536,24 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
           <br />
           <Text size={200}>例: "営業戦略についてのプレゼンテーションを作成してください"</Text>
           <br />
-          <Text size={200}>💡 各スライドは自動的に詳細化され、説明資料として使えるレベルになります</Text>
+          <Text size={200}>
+            💡 各スライドは自動的に詳細化され、説明資料として使えるレベルになります
+          </Text>
         </div>
       ) : (
         messages.map((msg) => (
-          <Card 
-            key={msg.id} 
-            className={`${styles.messageCard} ${msg.type === 'user' ? styles.userMessage : styles.assistantMessage}`}
+          <Card
+            key={msg.id}
+            className={`${styles.messageCard} ${msg.type === "user" ? styles.userMessage : styles.assistantMessage}`}
           >
             <CardHeader
               header={
                 <Text weight="semibold" size={300}>
-                  {msg.type === 'user' ? 'あなた' : 'AI アシスタント'}
+                  {msg.type === "user" ? "あなた" : "AI アシスタント"}
                 </Text>
               }
               description={
-                <Text className={styles.timestamp}>
-                  {formatTimestamp(msg.timestamp)}
-                </Text>
+                <Text className={styles.timestamp}>{formatTimestamp(msg.timestamp)}</Text>
               }
             />
             <CardPreview>
@@ -537,7 +562,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
           </Card>
         ))
       )}
-      {isLoading && currentStep === 'chat' && (
+      {isLoading && currentStep === "chat" && (
         <div className={styles.loadingContainer}>
           <Spinner size="tiny" />
           <Text>AI がアウトラインを生成中...</Text>
@@ -547,28 +572,22 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
   );
 
   const renderProgressSection = () => {
-    if (!isLoading || currentStep !== 'generating') return null;
+    if (!isLoading || currentStep !== "generating") return null;
 
     return (
       <div className={styles.progressSection}>
         <div className={styles.progressDetails}>
           <div className={styles.phaseIndicator}>
-            <Text weight="semibold">
-              {getPhaseDisplayName(generationPhase)}
-            </Text>
-            <Text size={200}>
-              ({Math.round(progressPercentage)}%)
-            </Text>
+            <Text weight="semibold">{getPhaseDisplayName(generationPhase)}</Text>
+            <Text size={200}>({Math.round(progressPercentage)}%)</Text>
           </div>
-          
+
           <ProgressBar value={progressPercentage} max={100} />
-          
-          <Text size={300}>
-            {generationProgress}
-          </Text>
-          
+
+          <Text size={300}>{generationProgress}</Text>
+
           {currentOutline && (
-            <div style={{ marginTop: '12px' }}>
+            <div style={{ marginTop: "12px" }}>
               <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>
                 処理中: {currentOutline.title} ({currentOutline.slides.length}スライド)
               </Text>
@@ -581,10 +600,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
 
   const renderChatInput = () => (
     <div className={styles.inputArea}>
-      <Field 
-        className={styles.textareaField}
-        label="メッセージを入力してください"
-      >
+      <Field className={styles.textareaField} label="メッセージを入力してください">
         <Textarea
           placeholder="例: 営業戦略についてのプレゼンテーションを作成してください"
           value={message}
@@ -595,7 +611,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
           disabled={isLoading}
         />
       </Field>
-      
+
       <div className={styles.buttonGroup}>
         <ThemeSettingsComponent
           selectedTheme={selectedTheme}
@@ -607,7 +623,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
           onToggleSettings={() => setShowThemeSettings(!showThemeSettings)}
           isLoading={isLoading}
         />
-        
+
         {/* テンプレート管理ボタン */}
         <Button
           size="small"
@@ -619,7 +635,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
         </Button>
 
         {/* 詳細化テストボタン（開発用） */}
-        {process.env.NODE_ENV === 'development' && (
+        {process.env.NODE_ENV === "development" && (
           <Button
             size="small"
             appearance="subtle"
@@ -629,7 +645,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
             詳細化テスト
           </Button>
         )}
-        
+
         <Button
           className={styles.primaryButton}
           appearance="primary"
@@ -652,7 +668,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
         selectedTheme={selectedTheme}
         selectedFontSize={selectedFontSize}
         onStartNewPresentation={handleStartNewPresentation}
-        onEditOutline={() => setCurrentStep('outline')}
+        onEditOutline={() => setCurrentStep("outline")}
       />
 
       {error && (
@@ -660,14 +676,12 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
           <Text weight="semibold" style={{ color: tokens.colorPaletteRedForeground1 }}>
             エラーが発生しました
           </Text>
-          <Text style={{ color: tokens.colorPaletteRedForeground1 }}>
-            {error}
-          </Text>
+          <Text style={{ color: tokens.colorPaletteRedForeground1 }}>{error}</Text>
         </div>
       )}
 
-      {generationProgress && currentStep !== 'generating' && (
-        <MessageBar intent="info" style={{ marginBottom: '16px' }}>
+      {generationProgress && currentStep !== "generating" && (
+        <MessageBar intent="info" style={{ marginBottom: "16px" }}>
           {generationProgress}
         </MessageBar>
       )}
@@ -676,12 +690,14 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
       {renderProgressSection()}
 
       {/* チャットセクション */}
-      {currentStep === 'chat' && (
+      {currentStep === "chat" && (
         <div className={styles.chatContainer}>
           <div className={styles.chatHeader}>
             <Chat24Regular />
-            <Text weight="semibold" size={400}>PowerPoint Concierge</Text>
-            <Text size={200} style={{ marginLeft: '8px', color: tokens.colorNeutralForeground3 }}>
+            <Text weight="semibold" size={400}>
+              PowerPoint Concierge
+            </Text>
+            <Text size={200} style={{ marginLeft: "8px", color: tokens.colorNeutralForeground3 }}>
               (詳細化機能搭載)
             </Text>
           </div>
@@ -694,17 +710,17 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
 
       {/* テンプレート選択セクション */}
       {showTemplateSelector && (
-        <Card style={{ marginBottom: '16px', border: `2px solid ${tokens.colorBrandStroke1}` }}>
+        <Card style={{ marginBottom: "16px", border: `2px solid ${tokens.colorBrandStroke1}` }}>
           <CardHeader>
             <div>
               <Text weight="semibold" size={400}>
                 🎨 テンプレート選択 ({templateRecommendations.length}個推奨)
               </Text>
-              <Text size={200} style={{ color: tokens.colorNeutralForeground3, marginTop: '4px' }}>
+              <Text size={200} style={{ color: tokens.colorNeutralForeground3, marginTop: "4px" }}>
                 ⚠️ テンプレートを選択すると、AI詳細化の代わりにテンプレート最適化が実行されます
               </Text>
             </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: "flex", gap: "8px" }}>
               <Button
                 appearance="secondary"
                 size="small"
@@ -716,10 +732,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
               >
                 詳細化を使用
               </Button>
-              <Button
-                appearance="subtle"
-                onClick={() => setShowTemplateSelector(false)}
-              >
+              <Button appearance="subtle" onClick={() => setShowTemplateSelector(false)}>
                 閉じる
               </Button>
             </div>
@@ -738,13 +751,17 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
 
       {/* 選択されたテンプレート表示 */}
       {selectedTemplate && useTemplateGeneration && (
-        <Card style={{ marginBottom: '16px', backgroundColor: tokens.colorBrandBackground2, border: `2px solid ${tokens.colorBrandStroke2}` }}>
+        <Card
+          style={{
+            marginBottom: "16px",
+            backgroundColor: tokens.colorBrandBackground2,
+            border: `2px solid ${tokens.colorBrandStroke2}`,
+          }}
+        >
           <CardHeader>
             <div>
-              <Text weight="semibold">
-                ✅ テンプレートモード: {selectedTemplate.name}
-              </Text>
-              <Text size={200} style={{ color: tokens.colorNeutralForeground3, marginTop: '4px' }}>
+              <Text weight="semibold">✅ テンプレートモード: {selectedTemplate.name}</Text>
+              <Text size={200} style={{ color: tokens.colorNeutralForeground3, marginTop: "4px" }}>
                 🔄 AI詳細化は行われず、テンプレート最適化が実行されます
               </Text>
             </div>
@@ -761,10 +778,9 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
           </CardHeader>
           <CardPreview>
             <Text size={200}>{selectedTemplate.description}</Text>
-            <Text size={100} style={{ marginTop: '4px', color: tokens.colorNeutralForeground3 }}>
-              スタイル: {selectedTemplate.metadata.presentationStyle} | 
-              対象: {selectedTemplate.metadata.targetAudience} | 
-              目的: {selectedTemplate.metadata.purpose}
+            <Text size={100} style={{ marginTop: "4px", color: tokens.colorNeutralForeground3 }}>
+              スタイル: {selectedTemplate.metadata.presentationStyle} | 対象:{" "}
+              {selectedTemplate.metadata.targetAudience} | 目的: {selectedTemplate.metadata.purpose}
             </Text>
           </CardPreview>
         </Card>
@@ -774,18 +790,18 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, settings }) => {
       {showTemplateManager && (
         <TemplateManager
           onTemplateCreated={(template) => {
-            console.log('Template created:', template);
+            console.log("Template created:", template);
             // 新しいテンプレートが作成されたときの処理
           }}
           onTemplateDeleted={(templateId) => {
-            console.log('Template deleted:', templateId);
+            console.log("Template deleted:", templateId);
             // テンプレートが削除されたときの処理
           }}
         />
       )}
 
       {/* アウトライン編集セクション */}
-      {currentStep === 'outline' && (
+      {currentStep === "outline" && (
         <OutlineEditor
           outline={currentOutline}
           onOutlineUpdate={handleOutlineUpdate}

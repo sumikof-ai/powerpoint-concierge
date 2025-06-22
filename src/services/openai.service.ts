@@ -1,6 +1,7 @@
 // src/services/openai.service.ts
-import { OpenAISettings, OpenAIRequest, OpenAIResponse, APIError } from '../taskpane/components/types';
-import { PresentationOutline, SlideOutline } from '../taskpane/components/types';
+/* global console, fetch */
+import { OpenAISettings, OpenAIRequest, OpenAIResponse } from "../taskpane/components/types";
+import { PresentationOutline } from "../taskpane/components/types";
 
 export class OpenAIService {
   private settings: OpenAISettings;
@@ -16,9 +17,11 @@ export class OpenAIService {
   /**
    * OpenAI APIにリクエストを送信
    */
-  public async sendRequest(messages: { role: 'system' | 'user' | 'assistant'; content: string }[]): Promise<string> {
+  public async sendRequest(
+    messages: { role: "system" | "user" | "assistant"; content: string }[]
+  ): Promise<string> {
     if (!this.settings.apiKey) {
-      throw new Error('APIキーが設定されていません');
+      throw new Error("APIキーが設定されていません");
     }
 
     const request: OpenAIRequest = {
@@ -30,32 +33,34 @@ export class OpenAIService {
 
     try {
       const response = await fetch(`${this.settings.baseUrl}/chat/completions`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.settings.apiKey}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.settings.apiKey}`,
         },
         body: JSON.stringify(request),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(
+          errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`
+        );
       }
 
       const data: OpenAIResponse = await response.json();
-      
+
       if (!data.choices || data.choices.length === 0) {
-        throw new Error('APIレスポンスが無効です');
+        throw new Error("APIレスポンスが無効です");
       }
 
       return data.choices[0].message.content;
     } catch (error) {
-      console.error('OpenAI API Error:', error);
+      console.error("OpenAI API Error:", error);
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error('APIリクエストでエラーが発生しました');
+      throw new Error("APIリクエストでエラーが発生しました");
     }
   }
 
@@ -102,21 +107,21 @@ slideTypeの説明：
 
     try {
       const response = await this.sendRequest([
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
       ]);
 
       // レスポンスからJSONを抽出
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error('JSONフォーマットの応答が得られませんでした');
+        throw new Error("JSONフォーマットの応答が得られませんでした");
       }
 
       const outline: PresentationOutline = JSON.parse(jsonMatch[0]);
-      
+
       // データの検証
       if (!outline.title || !outline.slides || !Array.isArray(outline.slides)) {
-        throw new Error('無効なアウトライン形式です');
+        throw new Error("無効なアウトライン形式です");
       }
 
       // スライド番号の正規化
@@ -126,15 +131,20 @@ slideTypeの説明：
 
       return outline;
     } catch (error) {
-      console.error('Structured outline generation error:', error);
-      throw new Error(`アウトライン生成エラー: ${error instanceof Error ? error.message : '不明なエラー'}`);
+      console.error("Structured outline generation error:", error);
+      throw new Error(
+        `アウトライン生成エラー: ${error instanceof Error ? error.message : "不明なエラー"}`
+      );
     }
   }
 
   /**
    * 既存のアウトラインを修正指示に基づいて再生成
    */
-  public async regenerateOutline(currentOutline: PresentationOutline, instruction: string): Promise<PresentationOutline> {
+  public async regenerateOutline(
+    currentOutline: PresentationOutline,
+    instruction: string
+  ): Promise<PresentationOutline> {
     const systemPrompt = `
 あなたは優秀なプレゼンテーション作成アシスタントです。
 現在のプレゼンテーションアウトラインを、ユーザーの指示に従って修正してください。
@@ -170,19 +180,19 @@ ${instruction}
 
     try {
       const response = await this.sendRequest([
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
       ]);
 
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error('JSONフォーマットの応答が得られませんでした');
+        throw new Error("JSONフォーマットの応答が得られませんでした");
       }
 
       const outline: PresentationOutline = JSON.parse(jsonMatch[0]);
-      
+
       if (!outline.title || !outline.slides || !Array.isArray(outline.slides)) {
-        throw new Error('無効なアウトライン形式です');
+        throw new Error("無効なアウトライン形式です");
       }
 
       outline.slides.forEach((slide, index) => {
@@ -191,8 +201,10 @@ ${instruction}
 
       return outline;
     } catch (error) {
-      console.error('Outline regeneration error:', error);
-      throw new Error(`アウトライン再生成エラー: ${error instanceof Error ? error.message : '不明なエラー'}`);
+      console.error("Outline regeneration error:", error);
+      throw new Error(
+        `アウトライン再生成エラー: ${error instanceof Error ? error.message : "不明なエラー"}`
+      );
     }
   }
 
@@ -222,8 +234,8 @@ ${instruction}
     const userPrompt = `以下のトピックについてプレゼンテーションのアウトラインを作成してください：\n\n${topic}`;
 
     return await this.sendRequest([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
     ]);
   }
 
@@ -253,8 +265,8 @@ PowerPointで使用できるテキスト形式で出力してください。
     `;
 
     return await this.sendRequest([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
     ]);
   }
 
@@ -281,8 +293,8 @@ ${editInstruction}
     `;
 
     return await this.sendRequest([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
     ]);
   }
 }

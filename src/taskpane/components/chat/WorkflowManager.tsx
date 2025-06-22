@@ -18,16 +18,16 @@ import {
   CheckmarkCircle24Regular,
   Settings24Regular,
 } from "@fluentui/react-icons";
-import { PresentationOutline } from '../types';
+import { PresentationOutline } from "../types";
 
-export type WorkflowStep = 'chat' | 'outline' | 'generating' | 'completed';
+export type WorkflowStep = "chat" | "outline" | "generating" | "completed";
 
 interface WorkflowManagerProps {
   currentStep: WorkflowStep;
   generationProgress: string;
   currentOutline: PresentationOutline | null;
-  selectedTheme: 'light' | 'dark' | 'colorful';
-  selectedFontSize: 'small' | 'medium' | 'large';
+  selectedTheme: "light" | "dark" | "colorful";
+  selectedFontSize: "small" | "medium" | "large";
   onStartNewPresentation: () => void;
   onEditOutline: () => void;
 }
@@ -75,19 +75,19 @@ const useStyles = makeStyles({
     gap: "16px",
   },
   actionButtons: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    marginTop: '16px',
-    width: '100%',
-    '@media (min-width: 400px)': {
-      flexDirection: 'row',
-      gap: '12px',
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    marginTop: "16px",
+    width: "100%",
+    "@media (min-width: 400px)": {
+      flexDirection: "row",
+      gap: "12px",
     },
   },
   actionButton: {
     flex: 1,
-    minWidth: '0',
+    minWidth: "0",
   },
   presentationCard: {
     maxWidth: "100%",
@@ -131,49 +131,60 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
 
   const getStepTitle = (step: WorkflowStep): string => {
     switch (step) {
-      case 'chat': return 'チャット';
-      case 'outline': return 'アウトライン編集';
-      case 'generating': return 'AI詳細化 & スライド生成中';
-      case 'completed': return '完了';
-      default: return '';
+      case "chat":
+        return "チャット";
+      case "outline":
+        return "アウトライン編集";
+      case "generating":
+        return "AI詳細化 & スライド生成中";
+      case "completed":
+        return "完了";
+      default:
+        return "";
     }
   };
 
   const getStepDescription = (step: WorkflowStep): string => {
     switch (step) {
-      case 'chat': 
-        return 'プレゼンテーションの要件を入力してください';
-      case 'outline': 
-        return 'AIが生成したアウトラインを確認・編集してください';
-      case 'generating': 
-        return '各スライドを詳細化し、PowerPointを生成しています';
-      case 'completed': 
-        return '詳細化されたスライドの生成が完了しました';
-      default: 
-        return '';
+      case "chat":
+        return "プレゼンテーションの要件を入力してください";
+      case "outline":
+        return "AIが生成したアウトラインを確認・編集してください";
+      case "generating":
+        return "各スライドを詳細化し、PowerPointを生成しています";
+      case "completed":
+        return "詳細化されたスライドの生成が完了しました";
+      default:
+        return "";
     }
   };
 
   const renderStepChain = () => {
     const steps: { key: WorkflowStep; label: string }[] = [
-      { key: 'chat', label: 'チャット' },
-      { key: 'outline', label: 'アウトライン' },
-      { key: 'generating', label: '詳細化' },
-      { key: 'completed', label: '完了' }
+      { key: "chat", label: "チャット" },
+      { key: "outline", label: "アウトライン" },
+      { key: "generating", label: "詳細化" },
+      { key: "completed", label: "完了" },
     ];
 
     return (
       <div className={styles.stepChain}>
         {steps.map((step, index) => (
           <React.Fragment key={step.key}>
-            <Badge 
+            <Badge
               appearance={
-                currentStep === step.key ? 'filled' : 
-                steps.findIndex(s => s.key === currentStep) > index ? 'ghost' : 'tint'
+                currentStep === step.key
+                  ? "filled"
+                  : steps.findIndex((s) => s.key === currentStep) > index
+                    ? "ghost"
+                    : "tint"
               }
               color={
-                currentStep === step.key ? 'brand' :
-                steps.findIndex(s => s.key === currentStep) > index ? 'success' : 'subtle'
+                currentStep === step.key
+                  ? "brand"
+                  : steps.findIndex((s) => s.key === currentStep) > index
+                    ? "success"
+                    : "subtle"
               }
               className={styles.stepBadge}
             >
@@ -189,12 +200,8 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
   const renderStepIndicator = () => (
     <div className={styles.stepIndicator}>
       <div className={styles.stepInfo}>
-        <Text weight="semibold">
-          現在のステップ: {getStepTitle(currentStep)}
-        </Text>
-        <Text size={300}>
-          {getStepDescription(currentStep)}
-        </Text>
+        <Text weight="semibold">現在のステップ: {getStepTitle(currentStep)}</Text>
+        <Text size={300}>{getStepDescription(currentStep)}</Text>
       </div>
       {renderStepChain()}
     </div>
@@ -203,9 +210,11 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
   const renderGeneratingStep = () => (
     <div className={styles.progressSection}>
       <Spinner size="large" />
-      <Text size={500} weight="semibold">AI詳細化 & スライド生成中...</Text>
+      <Text size={500} weight="semibold">
+        AI詳細化 & スライド生成中...
+      </Text>
       <Text>{generationProgress}</Text>
-      
+
       {currentOutline && (
         <Card className={styles.presentationCard}>
           <CardPreview>
@@ -214,9 +223,11 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
             <Text>スライド数: {currentOutline.slides.length}枚</Text>
             <Text>テーマ: {selectedTheme.toUpperCase()}</Text>
             <Text>フォントサイズ: {selectedFontSize.toUpperCase()}</Text>
-            
+
             <div className={styles.enhancementHighlight}>
-              <Text weight="semibold" size={300}>🚀 AI詳細化機能</Text>
+              <Text weight="semibold" size={300}>
+                🚀 AI詳細化機能
+              </Text>
               <div className={styles.featureList}>
                 <div className={styles.featureItem}>
                   <CheckmarkCircle24Regular className={styles.featureIcon} />
@@ -244,8 +255,10 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
 
   const renderCompletedStep = () => (
     <div className={styles.completedSection}>
-      <Text size={600} weight="semibold">🎉 詳細化スライド生成完了！</Text>
-      
+      <Text size={600} weight="semibold">
+        🎉 詳細化スライド生成完了！
+      </Text>
+
       {currentOutline && (
         <Card className={styles.presentationCard}>
           <CardPreview>
@@ -255,9 +268,11 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
             <Text>予想時間: {currentOutline.estimatedDuration}分</Text>
             <Text>適用テーマ: {selectedTheme.toUpperCase()}</Text>
             <Text>フォントサイズ: {selectedFontSize.toUpperCase()}</Text>
-            
+
             <div className={styles.enhancementHighlight}>
-              <Text weight="semibold" size={300}>✨ 詳細化の成果</Text>
+              <Text weight="semibold" size={300}>
+                ✨ 詳細化の成果
+              </Text>
               <div className={styles.featureList}>
                 <div className={styles.featureItem}>
                   <CheckmarkCircle24Regular className={styles.featureIcon} />
@@ -280,7 +295,7 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
           </CardPreview>
         </Card>
       )}
-      
+
       <div className={styles.actionButtons}>
         <Button
           appearance="primary"
@@ -303,15 +318,15 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
           icon={<Settings24Regular />}
           onClick={() => {
             // 設定画面への遷移や詳細設定の表示
-            console.log('詳細設定を開く');
+            console.log("詳細設定を開く");
           }}
           className={styles.actionButton}
         >
           詳細設定
         </Button>
       </div>
-      
-      <div style={{ marginTop: '16px', textAlign: 'center' }}>
+
+      <div style={{ marginTop: "16px", textAlign: "center" }}>
         <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>
           💡 PowerPoint内でスライドの編集・調整が可能です
         </Text>
@@ -320,12 +335,12 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
   );
 
   const renderOutlineStepInfo = () => {
-    if (currentStep !== 'outline') return null;
+    if (currentStep !== "outline") return null;
 
     return (
-      <Card style={{ marginBottom: '16px', backgroundColor: tokens.colorNeutralBackground3 }}>
-        <CardPreview style={{ padding: '16px' }}>
-          <Text weight="semibold" style={{ marginBottom: '8px' }}>
+      <Card style={{ marginBottom: "16px", backgroundColor: tokens.colorNeutralBackground3 }}>
+        <CardPreview style={{ padding: "16px" }}>
+          <Text weight="semibold" style={{ marginBottom: "8px" }}>
             📋 アウトライン編集のポイント
           </Text>
           <div className={styles.featureList}>
@@ -348,12 +363,12 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
   };
 
   const renderChatStepInfo = () => {
-    if (currentStep !== 'chat') return null;
+    if (currentStep !== "chat") return null;
 
     return (
-      <Card style={{ marginBottom: '16px', backgroundColor: tokens.colorNeutralBackground3 }}>
-        <CardPreview style={{ padding: '16px' }}>
-          <Text weight="semibold" style={{ marginBottom: '8px' }}>
+      <Card style={{ marginBottom: "16px", backgroundColor: tokens.colorNeutralBackground3 }}>
+        <CardPreview style={{ padding: "16px" }}>
+          <Text weight="semibold" style={{ marginBottom: "8px" }}>
             🚀 PowerPoint Concierge の特徴
           </Text>
           <div className={styles.featureList}>
@@ -389,8 +404,8 @@ export const WorkflowManager: React.FC<WorkflowManagerProps> = ({
       {renderOutlineStepInfo()}
 
       {/* ステップ別コンテンツ */}
-      {currentStep === 'generating' && renderGeneratingStep()}
-      {currentStep === 'completed' && renderCompletedStep()}
+      {currentStep === "generating" && renderGeneratingStep()}
+      {currentStep === "completed" && renderCompletedStep()}
     </>
   );
 };

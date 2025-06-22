@@ -1,9 +1,9 @@
 // src/services/powerpoint/core/SlideContentGenerator.ts - スライドコンテンツ詳細化サービス
-/* global PowerPoint */
+/* global console, setTimeout */
 
-import { OpenAIService } from '../../openai.service';
-import { SlideContent, SlideGenerationOptions } from '../types';
-import { PresentationOutline, SlideOutline } from '../../../taskpane/components/types';
+import { OpenAIService } from "../../openai.service";
+import { SlideContent, SlideGenerationOptions } from "../types";
+import { PresentationOutline, SlideOutline } from "../../../taskpane/components/types";
 
 /**
  * スライド毎のコンテンツ詳細化を担当するサービス
@@ -27,19 +27,14 @@ export class SlideContentGenerator {
 
     for (let i = 0; i < outline.slides.length; i++) {
       const slide = outline.slides[i];
-      
+
       // 進捗報告
       if (onProgress) {
         onProgress(i + 1, outline.slides.length, slide.title);
       }
 
       // スライドコンテンツを詳細化
-      const detailedContent = await this.generateDetailedSlideContent(
-        slide,
-        outline,
-        i,
-        options
-      );
+      const detailedContent = await this.generateDetailedSlideContent(slide, outline, i, options);
 
       detailedSlides.push(detailedContent);
 
@@ -63,15 +58,15 @@ export class SlideContentGenerator {
   ): Promise<SlideContent> {
     // コンテキスト情報を構築
     const context = this.buildSlideContext(slide, fullOutline, slideIndex);
-    
+
     // OpenAI APIを呼び出してコンテンツを詳細化
     const detailedContent = await this.callDetailedContentAPI(slide, context, options);
-    
+
     return {
       title: detailedContent.title || slide.title,
       content: detailedContent.content,
       slideType: slide.slideType,
-      speakerNotes: detailedContent.speakerNotes
+      speakerNotes: detailedContent.speakerNotes,
     };
   }
 
@@ -84,7 +79,8 @@ export class SlideContentGenerator {
     slideIndex: number
   ): SlideContext {
     const previousSlide = slideIndex > 0 ? fullOutline.slides[slideIndex - 1] : null;
-    const nextSlide = slideIndex < fullOutline.slides.length - 1 ? fullOutline.slides[slideIndex + 1] : null;
+    const nextSlide =
+      slideIndex < fullOutline.slides.length - 1 ? fullOutline.slides[slideIndex + 1] : null;
 
     return {
       presentationTitle: fullOutline.title,
@@ -97,7 +93,7 @@ export class SlideContentGenerator {
       previousSlideContent: previousSlide?.content || null,
       nextSlideTitle: nextSlide?.title || null,
       nextSlideContent: nextSlide?.content || null,
-      estimatedDuration: fullOutline.estimatedDuration
+      estimatedDuration: fullOutline.estimatedDuration,
     };
   }
 
@@ -114,20 +110,20 @@ export class SlideContentGenerator {
 
     try {
       const response = await this.openAIService.sendRequest([
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
       ]);
 
       // レスポンスをパース
       return this.parseDetailedContentResponse(response, slide);
     } catch (error) {
       console.error(`スライド ${slide.slideNumber} の詳細化でエラー:`, error);
-      
+
       // フォールバック: 元のコンテンツを返す
       return {
         title: slide.title,
-        content: slide.content.map(item => `• ${item}`),
-        speakerNotes: `スライド ${slide.slideNumber}: ${slide.title}`
+        content: slide.content.map((item) => `• ${item}`),
+        speakerNotes: `スライド ${slide.slideNumber}: ${slide.title}`,
       };
     }
   }
@@ -163,39 +159,51 @@ export class SlideContentGenerator {
 【スライドタイプ別の指針】`;
 
     switch (slideType) {
-      case 'title':
-        return basePrompt + `
+      case "title":
+        return (
+          basePrompt +
+          `
 - タイトルスライド：印象的で興味を引くタイトルに調整
 - サブタイトルまたは概要として、プレゼンテーションの価値と期待できる成果を明記
-- 聴衆にとっての意義や重要性を伝える`;
+- 聴衆にとっての意義や重要性を伝える`
+        );
 
-      case 'content':
-        return basePrompt + `
+      case "content":
+        return (
+          basePrompt +
+          `
 - メインコンテンツ：各ポイントを詳細に展開
 - 背景、現状、課題、解決策、効果などを具体的に説明
 - データ、事例、比較情報を積極的に含める
-- 実装可能な具体的なアクションアイテムを提示`;
+- 実装可能な具体的なアクションアイテムを提示`
+        );
 
-      case 'conclusion':
-        return basePrompt + `
+      case "conclusion":
+        return (
+          basePrompt +
+          `
 - まとめスライド：プレゼンテーション全体の要点を再整理
 - 次のステップや具体的なアクションプランを明示
 - 聴衆への明確なメッセージと行動喚起を含める
-- プレゼンテーションの価値と成果を再確認`;
+- プレゼンテーションの価値と成果を再確認`
+        );
 
       default:
-        return basePrompt + `
+        return (
+          basePrompt +
+          `
 - 一般的なコンテンツスライドとして詳細化
 - 論理的な構成で情報を整理
-- 具体性と実用性を重視`;
+- 具体性と実用性を重視`
+        );
     }
   }
 
   /**
    * ユーザープロンプトを構築
    */
-  private buildUserPrompt(slide: SlideOutline, context: SlideContext): string {
-    console.log(`not implemented ${slide}`);
+  private buildUserPrompt(_slide: SlideOutline, context: SlideContext): string {
+    // TODO: implement user prompt building logic
     return `
 【プレゼンテーション全体の情報】
 タイトル: ${context.presentationTitle}
@@ -206,11 +214,11 @@ export class SlideContentGenerator {
 スライド番号: ${context.slideNumber}/${context.totalSlides}
 スライドタイプ: ${context.slideType}
 現在のタイトル: ${context.slideTitle}
-現在のコンテンツ: ${context.currentContent.map((item, idx) => `${idx + 1}. ${item}`).join('\n')}
+現在のコンテンツ: ${context.currentContent.map((item, idx) => `${idx + 1}. ${item}`).join("\n")}
 
 【前後のスライドコンテキスト】
-${context.previousSlideTitle ? `前のスライド: ${context.previousSlideTitle}` : '（最初のスライド）'}
-${context.nextSlideTitle ? `次のスライド: ${context.nextSlideTitle}` : '（最後のスライド）'}
+${context.previousSlideTitle ? `前のスライド: ${context.previousSlideTitle}` : "（最初のスライド）"}
+${context.nextSlideTitle ? `次のスライド: ${context.nextSlideTitle}` : "（最後のスライド）"}
 
 【詳細化の指示】
 上記のアウトライン情報を基に、説明資料として使える詳細なスライドコンテンツを作成してください。
@@ -227,24 +235,29 @@ ${context.nextSlideTitle ? `次のスライド: ${context.nextSlideTitle}` : '�
   /**
    * APIレスポンスをパースして詳細コンテンツを抽出
    */
-  private parseDetailedContentResponse(response: string, originalSlide: SlideOutline): DetailedSlideContent {
+  private parseDetailedContentResponse(
+    response: string,
+    originalSlide: SlideOutline
+  ): DetailedSlideContent {
     try {
       // JSON部分を抽出
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error('JSON形式の応答が見つかりません');
+        throw new Error("JSON形式の応答が見つかりません");
       }
 
       const parsed = JSON.parse(jsonMatch[0]) as DetailedSlideContent;
-      
+
       // 基本的な検証
       if (!parsed.title || !Array.isArray(parsed.content)) {
-        throw new Error('無効なレスポンス形式');
+        throw new Error("無効なレスポンス形式");
       }
 
       // コンテンツが空の場合はフォールバック
       if (parsed.content.length === 0) {
-        parsed.content = originalSlide.content.map(item => `• ${item}（詳細化処理でエラーが発生）`);
+        parsed.content = originalSlide.content.map(
+          (item) => `• ${item}（詳細化処理でエラーが発生）`
+        );
       }
 
       // スピーカーノートが無い場合はデフォルトを設定
@@ -254,13 +267,13 @@ ${context.nextSlideTitle ? `次のスライド: ${context.nextSlideTitle}` : '�
 
       return parsed;
     } catch (error) {
-      console.error('詳細コンテンツのパースでエラー:', error);
-      
+      console.error("詳細コンテンツのパースでエラー:", error);
+
       // フォールバック
       return {
         title: originalSlide.title,
-        content: originalSlide.content.map(item => `• ${item}`),
-        speakerNotes: `スライド ${originalSlide.slideNumber}: ${originalSlide.title}`
+        content: originalSlide.content.map((item) => `• ${item}`),
+        speakerNotes: `スライド ${originalSlide.slideNumber}: ${originalSlide.title}`,
       };
     }
   }
@@ -269,31 +282,31 @@ ${context.nextSlideTitle ? `次のスライド: ${context.nextSlideTitle}` : '�
    * 遅延処理（API制限対策）
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
    * コンテンツの長さを調整
    */
   public adjustContentLength(content: string[], maxLength: number = 200): string[] {
-    return content.map(item => {
+    return content.map((item) => {
       if (item.length <= maxLength) {
         return item;
       }
-      
+
       // 長すぎる場合は適切な位置で改行
-      const sentences = item.split('。');
-      let result = '';
-      
+      const sentences = item.split("。");
+      let result = "";
+
       for (const sentence of sentences) {
-        if ((result + sentence + '。').length <= maxLength) {
-          result += sentence + '。';
+        if ((result + sentence + "。").length <= maxLength) {
+          result += sentence + "。";
         } else {
           break;
         }
       }
-      
-      return result || item.substring(0, maxLength - 3) + '...';
+
+      return result || item.substring(0, maxLength - 3) + "...";
     });
   }
 
@@ -310,14 +323,14 @@ ${context.nextSlideTitle ? `次のスライド: ${context.nextSlideTitle}` : '�
 
     // タイトルの長さチェック
     if (content.title.length > 120) {
-      warnings.push('タイトルが長すぎます');
-      suggestions.push('タイトルを簡潔にまとめることを推奨');
+      warnings.push("タイトルが長すぎます");
+      suggestions.push("タイトルを簡潔にまとめることを推奨");
     }
 
     // コンテンツ項目数のチェック
     if (content.content.length > 7) {
-      warnings.push('コンテンツ項目が多すぎます');
-      suggestions.push('重要なポイントに絞り込むことを推奨');
+      warnings.push("コンテンツ項目が多すぎます");
+      suggestions.push("重要なポイントに絞り込むことを推奨");
     }
 
     // 各項目の長さチェック
@@ -329,16 +342,16 @@ ${context.nextSlideTitle ? `次のスライド: ${context.nextSlideTitle}` : '�
     });
 
     // 読みやすさのチェック
-    const totalLength = content.content.join('').length;
+    const totalLength = content.content.join("").length;
     if (totalLength > 1000) {
-      warnings.push('総文字数が多すぎます');
-      suggestions.push('内容を簡潔にまとめるか、複数スライドに分割することを推奨');
+      warnings.push("総文字数が多すぎます");
+      suggestions.push("内容を簡潔にまとめるか、複数スライドに分割することを推奨");
     }
 
     return {
       isValid: warnings.length === 0,
       warnings,
-      suggestions
+      suggestions,
     };
   }
 
@@ -348,9 +361,9 @@ ${context.nextSlideTitle ? `次のスライド: ${context.nextSlideTitle}` : '�
   public createFallbackContent(slide: SlideOutline): SlideContent {
     return {
       title: slide.title,
-      content: slide.content.map(item => `• ${item}（標準コンテンツ）`),
+      content: slide.content.map((item) => `• ${item}（標準コンテンツ）`),
       slideType: slide.slideType,
-      speakerNotes: `スライド ${slide.slideNumber}: ${slide.title}の標準版コンテンツです。`
+      speakerNotes: `スライド ${slide.slideNumber}: ${slide.title}の標準版コンテンツです。`,
     };
   }
 
@@ -382,17 +395,20 @@ ${context.nextSlideTitle ? `次のスライド: ${context.nextSlideTitle}` : '�
         results.push(detailedContent);
       } catch (error) {
         console.error(`スライド ${i + 1} の生成でエラー:`, error);
-        
+
         // エラーコールバックを呼び出し
         if (onError) {
-          onError(i, error instanceof Error ? error : new Error('不明なエラー'));
+          onError(i, error instanceof Error ? error : new Error("不明なエラー"));
         }
 
         // フォールバックコンテンツを作成
         const fallbackContent = this.createFallbackContent(outline.slides[i]);
         results.push(fallbackContent);
-        
-        errors.push({ slideIndex: i, error: error instanceof Error ? error : new Error('不明なエラー') });
+
+        errors.push({
+          slideIndex: i,
+          error: error instanceof Error ? error : new Error("不明なエラー"),
+        });
       }
 
       // API制限対策の待機

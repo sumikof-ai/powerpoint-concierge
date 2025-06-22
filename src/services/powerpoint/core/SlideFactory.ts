@@ -1,9 +1,9 @@
 // src/services/powerpoint/core/SlideFactory.ts - スライド作成ファクトリー
-/* global PowerPoint */
+/* global PowerPoint, console, setTimeout */
 
-import { SlideContent, SlideGenerationOptions, SlideLayoutType } from '../types';
-import { ContentRenderer } from './ContentRenderer';
-import { ThemeApplier } from './ThemeApplier';
+import { SlideContent, SlideGenerationOptions, SlideLayoutType } from "../types";
+import { ContentRenderer } from "./ContentRenderer";
+import { ThemeApplier } from "./ThemeApplier";
 
 /**
  * スライド作成とレイアウト決定を担当するファクトリークラス
@@ -21,23 +21,28 @@ export class SlideFactory {
    * スライドタイプに基づいてレイアウトを決定
    */
   public determineSlideLayout(
-    slideType: 'title' | 'content' | 'conclusion',
+    slideType: "title" | "content" | "conclusion",
     contentAmount: number,
-    defaultLayout?: string
+    defaultLayout?: string,
+    hasTemplate?: boolean
   ): SlideLayoutType {
     switch (slideType) {
-      case 'title':
-        return 'title';
-      case 'conclusion':
-        return 'content';
-      case 'content':
+      case "title":
+        // テンプレートが指定されている場合はタイトルレイアウト、それ以外は白紙スライド
+        if (hasTemplate) {
+          return "title";
+        }
+        return "blank";
+      case "conclusion":
+        return "content";
+      case "content":
         // コンテンツ量に基づいて最適なレイアウトを選択
         if (contentAmount > 300) {
-          return 'twoContent'; // 大量のコンテンツは2カラムに
+          return "twoContent"; // 大量のコンテンツは2カラムに
         }
-        return (defaultLayout as SlideLayoutType) || 'content';
+        return (defaultLayout as SlideLayoutType) || "content";
       default:
-        return 'content';
+        return "content";
     }
   }
 
@@ -52,7 +57,7 @@ export class SlideFactory {
     // 新しいスライドを追加
     context.presentation.slides.add();
     await context.sync();
-    
+
     // 最後に追加されたスライドを取得
     const slides = context.presentation.slides;
     slides.load("items");
@@ -61,12 +66,13 @@ export class SlideFactory {
 
     // コンテンツ量を計算
     const contentAmount = this.calculateContentAmount(slideData);
-    
+
     // 最適なレイアウトを決定
     const layout = this.determineSlideLayout(
       slideData.slideType,
       contentAmount,
-      options.slideLayout
+      options.slideLayout,
+      options.useTemplate !== undefined
     );
 
     // レイアウトに応じてコンテンツを配置
@@ -89,19 +95,19 @@ export class SlideFactory {
     options: SlideGenerationOptions
   ): Promise<void> {
     switch (layout) {
-      case 'title':
+      case "title":
         await this.contentRenderer.renderTitleSlide(context, slide, slideData, options);
         break;
-      case 'content':
+      case "content":
         await this.contentRenderer.renderContentSlide(context, slide, slideData, options);
         break;
-      case 'twoContent':
+      case "twoContent":
         await this.contentRenderer.renderTwoContentSlide(context, slide, slideData, options);
         break;
-      case 'comparison':
+      case "comparison":
         await this.contentRenderer.renderComparisonSlide(context, slide, slideData, options);
         break;
-      case 'blank':
+      case "blank":
         await this.contentRenderer.renderBlankSlide(context, slide, slideData, options);
         break;
       default:
@@ -129,7 +135,7 @@ export class SlideFactory {
   ): Promise<void> {
     for (let i = 0; i < slides.length; i++) {
       const slideData = slides[i];
-      
+
       // 進捗報告
       if (onProgress) {
         onProgress(i + 1, slides.length, slideData.title);
@@ -137,10 +143,10 @@ export class SlideFactory {
 
       // スライドを作成
       await this.createSlideWithContent(context, slideData, options);
-      
+
       // PowerPoint APIの制限を避けるため、少し待機
       if (i < slides.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
   }
@@ -152,22 +158,22 @@ export class SlideFactory {
     return {
       title: {
         titlePosition: { left: 75, top: 150, width: 600, height: 150 },
-        subtitlePosition: { left: 100, top: 320, width: 550, height: 100 }
+        subtitlePosition: { left: 100, top: 320, width: 550, height: 100 },
       },
       content: {
         titlePosition: { left: 50, top: 40, width: 650, height: 80 },
-        contentPosition: { left: 80, top: 140, width: 580, height: 350 }
+        contentPosition: { left: 80, top: 140, width: 580, height: 350 },
       },
       twoContent: {
         titlePosition: { left: 50, top: 40, width: 650, height: 80 },
         leftContentPosition: { left: 50, top: 140, width: 300, height: 350 },
-        rightContentPosition: { left: 380, top: 140, width: 300, height: 350 }
+        rightContentPosition: { left: 380, top: 140, width: 300, height: 350 },
       },
       comparison: {
         titlePosition: { left: 50, top: 40, width: 650, height: 80 },
         leftHeaderPosition: { left: 50, top: 140, width: 300, height: 40 },
-        rightHeaderPosition: { left: 380, top: 140, width: 300, height: 40 }
-      }
+        rightHeaderPosition: { left: 380, top: 140, width: 300, height: 40 },
+      },
     };
   }
 
@@ -184,13 +190,13 @@ export class SlideFactory {
 
     // タイトルの長さチェック
     if (slideData.title.length > 100) {
-      warnings.push('タイトルが長すぎます（100文字以内を推奨）');
+      warnings.push("タイトルが長すぎます（100文字以内を推奨）");
     }
 
     // コンテンツ数のチェック
     if (slideData.content.length > 7) {
-      warnings.push('コンテンツ項目が多すぎます（7項目以内を推奨）');
-      suggestions.push('複数のスライドに分割することを検討してください');
+      warnings.push("コンテンツ項目が多すぎます（7項目以内を推奨）");
+      suggestions.push("複数のスライドに分割することを検討してください");
     }
 
     // 各コンテンツ項目の長さチェック
@@ -201,14 +207,14 @@ export class SlideFactory {
     });
 
     // 空のコンテンツチェック
-    if (slideData.content.length === 0 && slideData.slideType !== 'title') {
-      warnings.push('コンテンツが空です');
+    if (slideData.content.length === 0 && slideData.slideType !== "title") {
+      warnings.push("コンテンツが空です");
     }
 
     return {
       isValid: warnings.length === 0,
       warnings,
-      suggestions
+      suggestions,
     };
   }
 
@@ -221,16 +227,16 @@ export class SlideFactory {
 
     // コンテンツ量に基づく提案
     if (contentAmount > 500) {
-      suggestions.push('コンテンツ量が多いため、2カラムレイアウトまたは複数スライドへの分割を推奨');
+      suggestions.push("コンテンツ量が多いため、2カラムレイアウトまたは複数スライドへの分割を推奨");
     }
 
     // スライドタイプに基づく提案
-    if (slideData.slideType === 'title' && slideData.content.length > 2) {
-      suggestions.push('タイトルスライドはシンプルに保つことを推奨（2項目以内）');
+    if (slideData.slideType === "title" && slideData.content.length > 2) {
+      suggestions.push("タイトルスライドはシンプルに保つことを推奨（2項目以内）");
     }
 
-    if (slideData.slideType === 'conclusion' && slideData.content.length > 5) {
-      suggestions.push('まとめスライドは要点を絞ることを推奨（5項目以内）');
+    if (slideData.slideType === "conclusion" && slideData.content.length > 5) {
+      suggestions.push("まとめスライドは要点を絞ることを推奨（5項目以内）");
     }
 
     return suggestions;

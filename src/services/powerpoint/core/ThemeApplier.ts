@@ -1,36 +1,35 @@
 // src/services/powerpoint/core/ThemeApplier.ts - テーマ適用サービス
-/* global PowerPoint */
+/* global PowerPoint, console */
 
-import { FontSizes, ThemeType, FontSizeType, ColorType } from '../types';
+import { FontSizes, ThemeType, FontSizeType, ColorType } from "../types";
 
 /**
  * スライドのテーマとスタイルを適用するサービス
  */
 export class ThemeApplier {
-  
   // 利用可能なテーマ設定
   private themePresets = {
     light: {
-      backgroundColor: '#FFFFFF',
-      textColor: '#000000',
-      accentColor: '#0078D4',
-      titleColor: '#323130',
-      borderColor: '#D1D1D1'
+      backgroundColor: "#FFFFFF",
+      textColor: "#000000",
+      accentColor: "#0078D4",
+      titleColor: "#323130",
+      borderColor: "#D1D1D1",
     },
     dark: {
-      backgroundColor: '#1F1F1F',
-      textColor: '#FFFFFF',
-      accentColor: '#0078D4',
-      titleColor: '#FFFFFF',
-      borderColor: '#404040'
+      backgroundColor: "#1F1F1F",
+      textColor: "#FFFFFF",
+      accentColor: "#0078D4",
+      titleColor: "#FFFFFF",
+      borderColor: "#404040",
     },
     colorful: {
-      backgroundColor: '#FFFFFF',
-      textColor: '#323130',
-      accentColor: '#FF6B35',
-      titleColor: '#2D3748',
-      borderColor: '#E2E8F0'
-    }
+      backgroundColor: "#FFFFFF",
+      textColor: "#323130",
+      accentColor: "#FF6B35",
+      titleColor: "#2D3748",
+      borderColor: "#E2E8F0",
+    },
   };
 
   /**
@@ -38,11 +37,11 @@ export class ThemeApplier {
    */
   public getFontSize(size?: FontSizeType): FontSizes {
     switch (size) {
-      case 'small':
+      case "small":
         return { title: 32, heading: 20, subtitle: 16, body: 12, accent: 14 };
-      case 'large':
+      case "large":
         return { title: 44, heading: 28, subtitle: 22, body: 16, accent: 18 };
-      case 'medium':
+      case "medium":
       default:
         return { title: 38, heading: 24, subtitle: 18, body: 14, accent: 16 };
     }
@@ -51,35 +50,31 @@ export class ThemeApplier {
   /**
    * テーマに基づいて色を適用
    */
-  public applyThemeColors(
-    shape: PowerPoint.Shape, 
-    theme?: ThemeType, 
-    type?: ColorType
-  ): void {
+  public applyThemeColors(shape: PowerPoint.Shape, theme?: ThemeType, type?: ColorType): void {
     try {
-      const themeColors = this.themePresets[theme || 'light'];
-      
+      const themeColors = this.themePresets[theme || "light"];
+
       switch (type) {
-        case 'title':
+        case "title":
           this.applyTitleStyle(shape, themeColors);
           break;
-        case 'heading':
+        case "heading":
           this.applyHeadingStyle(shape, themeColors);
           break;
-        case 'subtitle':
+        case "subtitle":
           this.applySubtitleStyle(shape, themeColors);
           break;
-        case 'body':
+        case "body":
           this.applyBodyStyle(shape, themeColors);
           break;
-        case 'accent':
+        case "accent":
           this.applyAccentStyle(shape, themeColors);
           break;
         default:
           this.applyDefaultStyle(shape, themeColors);
       }
     } catch (error) {
-      console.warn('テーマ色の適用に失敗しました:', error);
+      console.warn("テーマ色の適用に失敗しました:", error);
       this.applyFallbackColors(shape);
     }
   }
@@ -90,7 +85,7 @@ export class ThemeApplier {
   private applyTitleStyle(shape: PowerPoint.Shape, themeColors: any): void {
     shape.fill.setSolidColor(themeColors.backgroundColor);
     shape.textFrame.textRange.font.color = themeColors.titleColor;
-    
+
     // タイトル用の装飾
     if (shape.lineFormat) {
       shape.lineFormat.color = themeColors.accentColor;
@@ -104,7 +99,7 @@ export class ThemeApplier {
   private applyHeadingStyle(shape: PowerPoint.Shape, themeColors: any): void {
     shape.fill.setSolidColor(themeColors.backgroundColor);
     shape.textFrame.textRange.font.color = themeColors.titleColor;
-    
+
     if (shape.lineFormat) {
       shape.lineFormat.color = themeColors.borderColor;
       shape.lineFormat.weight = 1;
@@ -125,7 +120,7 @@ export class ThemeApplier {
   private applyBodyStyle(shape: PowerPoint.Shape, themeColors: any): void {
     shape.fill.setSolidColor(themeColors.backgroundColor);
     shape.textFrame.textRange.font.color = themeColors.textColor;
-    
+
     if (shape.lineFormat) {
       shape.lineFormat.color = themeColors.borderColor;
       shape.lineFormat.weight = 1;
@@ -138,7 +133,7 @@ export class ThemeApplier {
   private applyAccentStyle(shape: PowerPoint.Shape, themeColors: any): void {
     shape.fill.setSolidColor(themeColors.accentColor);
     shape.textFrame.textRange.font.color = themeColors.backgroundColor;
-    
+
     if (shape.lineFormat) {
       shape.lineFormat.color = themeColors.accentColor;
       shape.lineFormat.weight = 2;
@@ -158,10 +153,10 @@ export class ThemeApplier {
    */
   private applyFallbackColors(shape: PowerPoint.Shape): void {
     try {
-      shape.fill.setSolidColor('#FFFFFF');
-      shape.textFrame.textRange.font.color = '#000000';
+      shape.fill.setSolidColor("#FFFFFF");
+      shape.textFrame.textRange.font.color = "#000000";
     } catch (fallbackError) {
-      console.warn('フォールバック色の適用も失敗しました:', fallbackError);
+      console.warn("フォールバック色の適用も失敗しました:", fallbackError);
     }
   }
 
@@ -169,7 +164,7 @@ export class ThemeApplier {
    * アクセントカラーを取得
    */
   public getAccentColor(theme?: ThemeType): string {
-    const themeColors = this.themePresets[theme || 'light'];
+    const themeColors = this.themePresets[theme || "light"];
     return themeColors.accentColor;
   }
 
@@ -177,7 +172,7 @@ export class ThemeApplier {
    * 背景色を取得
    */
   public getBackgroundColor(theme?: ThemeType): string {
-    const themeColors = this.themePresets[theme || 'light'];
+    const themeColors = this.themePresets[theme || "light"];
     return themeColors.backgroundColor;
   }
 
@@ -185,7 +180,7 @@ export class ThemeApplier {
    * テキスト色を取得
    */
   public getTextColor(theme?: ThemeType): string {
-    const themeColors = this.themePresets[theme || 'light'];
+    const themeColors = this.themePresets[theme || "light"];
     return themeColors.textColor;
   }
 
@@ -193,7 +188,7 @@ export class ThemeApplier {
    * ボーダー色を取得
    */
   public getBorderColor(theme?: ThemeType): string {
-    const themeColors = this.themePresets[theme || 'light'];
+    const themeColors = this.themePresets[theme || "light"];
     return themeColors.borderColor;
   }
 
@@ -201,7 +196,7 @@ export class ThemeApplier {
    * タイトル色を取得
    */
   public getTitleColor(theme?: ThemeType): string {
-    const themeColors = this.themePresets[theme || 'light'];
+    const themeColors = this.themePresets[theme || "light"];
     return themeColors.titleColor;
   }
 
@@ -209,7 +204,7 @@ export class ThemeApplier {
    * テーマプリセットを取得
    */
   public getThemePreset(theme?: ThemeType) {
-    return this.themePresets[theme || 'light'];
+    return this.themePresets[theme || "light"];
   }
 
   /**
@@ -234,7 +229,7 @@ export class ThemeApplier {
         shape.lineFormat.color = customColors.accentColor;
       }
     } catch (error) {
-      console.warn('カスタムテーマの適用に失敗しました:', error);
+      console.warn("カスタムテーマの適用に失敗しました:", error);
       this.applyFallbackColors(shape);
     }
   }
@@ -250,12 +245,12 @@ export class ThemeApplier {
     let isSupported = true;
 
     // PowerPoint.js APIでサポートされていない機能のチェック
-    if (theme === 'dark') {
-      warnings.push('ダークテーマは一部の環境で表示が異なる場合があります');
+    if (theme === "dark") {
+      warnings.push("ダークテーマは一部の環境で表示が異なる場合があります");
     }
 
-    if (theme === 'colorful') {
-      warnings.push('カラフルテーマは印刷時の色味が異なる場合があります');
+    if (theme === "colorful") {
+      warnings.push("カラフルテーマは印刷時の色味が異なる場合があります");
     }
 
     return { isSupported, warnings };
@@ -264,20 +259,16 @@ export class ThemeApplier {
   /**
    * グラデーション効果を適用（実験的）
    */
-  public applyGradientEffect(
-    shape: PowerPoint.Shape,
-    startColor: string,
-    endColor: string
-  ): void {
+  public applyGradientEffect(shape: PowerPoint.Shape, startColor: string, endColor: string): void {
     try {
       // PowerPoint.js APIでのグラデーション適用は限定的
       // 将来の拡張に備えた実装
       console.log(`グラデーション効果を適用: ${startColor} → ${endColor}`);
-      
+
       // フォールバック: 開始色を背景色として使用
       shape.fill.setSolidColor(startColor);
     } catch (error) {
-      console.warn('グラデーション効果の適用に失敗しました:', error);
+      console.warn("グラデーション効果の適用に失敗しました:", error);
       shape.fill.setSolidColor(startColor);
     }
   }
@@ -287,13 +278,13 @@ export class ThemeApplier {
    */
   public applyShadowEffect(
     shape: PowerPoint.Shape,
-    shadowColor: string = '#000000',
+    shadowColor: string = "#000000",
     opacity: number = 0.3
   ): void {
     try {
       // PowerPoint.js APIでの影効果は限定的
       console.log(`影効果を適用: ${shadowColor}, 透明度: ${opacity}`);
-      
+
       // 現在のAPIでは直接的な影効果の適用は制限される
       // 代替として、ボーダーで擬似的な効果を作成
       if (shape.lineFormat) {
@@ -301,7 +292,7 @@ export class ThemeApplier {
         shape.lineFormat.weight = 2;
       }
     } catch (error) {
-      console.warn('影効果の適用に失敗しました:', error);
+      console.warn("影効果の適用に失敗しました:", error);
     }
   }
 
@@ -310,19 +301,19 @@ export class ThemeApplier {
    */
   public getAnimationSuggestions(slideType: string): string[] {
     const suggestions: string[] = [];
-    
+
     switch (slideType) {
-      case 'title':
-        suggestions.push('フェードイン効果でタイトルを印象的に');
+      case "title":
+        suggestions.push("フェードイン効果でタイトルを印象的に");
         break;
-      case 'content':
-        suggestions.push('箇条書きを順次表示');
+      case "content":
+        suggestions.push("箇条書きを順次表示");
         break;
-      case 'conclusion':
-        suggestions.push('まとめ項目を強調アニメーション');
+      case "conclusion":
+        suggestions.push("まとめ項目を強調アニメーション");
         break;
     }
-    
+
     return suggestions;
   }
 
@@ -335,23 +326,23 @@ export class ThemeApplier {
   ): { ratio: number; isAccessible: boolean } {
     // 簡易的なコントラスト比計算
     // 実際の実装では、より詳細な色空間変換が必要
-    
+
     const getLuminance = (color: string): number => {
       // 16進数カラーをRGBに変換して輝度を計算
-      const hex = color.replace('#', '');
+      const hex = color.replace("#", "");
       const r = parseInt(hex.substr(0, 2), 16) / 255;
       const g = parseInt(hex.substr(2, 2), 16) / 255;
       const b = parseInt(hex.substr(4, 2), 16) / 255;
-      
+
       return 0.299 * r + 0.587 * g + 0.114 * b;
     };
-    
+
     const fgLuminance = getLuminance(foregroundColor);
     const bgLuminance = getLuminance(backgroundColor);
-    
+
     const ratio = Math.abs(fgLuminance - bgLuminance);
     const isAccessible = ratio > 0.5; // 簡易的な閾値
-    
+
     return { ratio, isAccessible };
   }
 }

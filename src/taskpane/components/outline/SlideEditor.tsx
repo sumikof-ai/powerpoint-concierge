@@ -19,7 +19,7 @@ import {
   ArrowUp24Regular,
   ArrowDown24Regular,
 } from "@fluentui/react-icons";
-import { SlideOutline } from '../types';
+import { SlideOutline } from "../types";
 
 interface SlideEditorProps {
   slide: SlideOutline;
@@ -30,7 +30,7 @@ interface SlideEditorProps {
   onAddContentItem: (slideIndex: number) => void;
   onRemoveContentItem: (slideIndex: number, contentIndex: number) => void;
   onRemoveSlide: (slideIndex: number) => void;
-  onMoveSlide: (slideIndex: number, direction: 'up' | 'down') => void;
+  onMoveSlide: (slideIndex: number, direction: "up" | "down") => void;
   isLoading: boolean;
 }
 
@@ -69,10 +69,10 @@ const useStyles = makeStyles({
     color: tokens.colorNeutralForeground3,
   },
   accordionContent: {
-    padding: '12px 0',
+    padding: "12px 0",
   },
   fieldMargin: {
-    marginBottom: '16px',
+    marginBottom: "16px",
   },
 });
 
@@ -92,16 +92,23 @@ const SlideEditor: React.FC<SlideEditorProps> = ({
 
   const getSlideTypeDisplay = useCallback((type: string): string => {
     switch (type) {
-      case 'title': return 'タイトルスライド';
-      case 'content': return 'コンテンツスライド';
-      case 'conclusion': return 'まとめスライド';
-      default: return 'その他';
+      case "title":
+        return "タイトルスライド";
+      case "content":
+        return "コンテンツスライド";
+      case "conclusion":
+        return "まとめスライド";
+      default:
+        return "その他";
     }
   }, []);
 
-  const handleSlideMove = useCallback((direction: 'up' | 'down') => {
-    onMoveSlide(slideIndex, direction);
-  }, [slideIndex, onMoveSlide]);
+  const handleSlideMove = useCallback(
+    (direction: "up" | "down") => {
+      onMoveSlide(slideIndex, direction);
+    },
+    [slideIndex, onMoveSlide]
+  );
 
   const handleSlideRemove = useCallback(() => {
     if (totalSlides > 1) {
@@ -113,11 +120,14 @@ const SlideEditor: React.FC<SlideEditorProps> = ({
     onAddContentItem(slideIndex);
   }, [slideIndex, onAddContentItem]);
 
-  const handleContentRemove = useCallback((contentIndex: number) => {
-    if (slide.content.length > 1) {
-      onRemoveContentItem(slideIndex, contentIndex);
-    }
-  }, [slideIndex, slide.content.length, onRemoveContentItem]);
+  const handleContentRemove = useCallback(
+    (contentIndex: number) => {
+      if (slide.content.length > 1) {
+        onRemoveContentItem(slideIndex, contentIndex);
+      }
+    },
+    [slideIndex, slide.content.length, onRemoveContentItem]
+  );
 
   const renderSlideHeader = () => (
     <div className={styles.slideHeader}>
@@ -125,17 +135,15 @@ const SlideEditor: React.FC<SlideEditorProps> = ({
         <Text weight="semibold">
           スライド {slide.slideNumber}: {slide.title}
         </Text>
-        <div className={styles.slideTypeDisplay}>
-          {getSlideTypeDisplay(slide.slideType)}
-        </div>
+        <div className={styles.slideTypeDisplay}>{getSlideTypeDisplay(slide.slideType)}</div>
       </div>
-      
+
       <div className={styles.slideControls}>
         <Button
           size="small"
           appearance="subtle"
           icon={<ArrowUp24Regular />}
-          onClick={() => handleSlideMove('up')}
+          onClick={() => handleSlideMove("up")}
           disabled={slideIndex === 0 || isLoading}
           title="スライドを上に移動"
         />
@@ -143,7 +151,7 @@ const SlideEditor: React.FC<SlideEditorProps> = ({
           size="small"
           appearance="subtle"
           icon={<ArrowDown24Regular />}
-          onClick={() => handleSlideMove('down')}
+          onClick={() => handleSlideMove("down")}
           disabled={slideIndex === totalSlides - 1 || isLoading}
           title="スライドを下に移動"
         />
@@ -181,7 +189,7 @@ const SlideEditor: React.FC<SlideEditorProps> = ({
           />
         </div>
       ))}
-      
+
       <Button
         className={styles.addButton}
         size="small"
@@ -197,10 +205,8 @@ const SlideEditor: React.FC<SlideEditorProps> = ({
 
   return (
     <AccordionItem value={`slide-${slideIndex}`}>
-      <AccordionHeader>
-        {renderSlideHeader()}
-      </AccordionHeader>
-      
+      <AccordionHeader>{renderSlideHeader()}</AccordionHeader>
+
       <AccordionPanel>
         <div className={styles.accordionContent}>
           <Field label="スライドタイトル" className={styles.fieldMargin}>
@@ -212,9 +218,7 @@ const SlideEditor: React.FC<SlideEditorProps> = ({
             />
           </Field>
 
-          <Field label="コンテンツ">
-            {renderContentItems()}
-          </Field>
+          <Field label="コンテンツ">{renderContentItems()}</Field>
         </div>
       </AccordionPanel>
     </AccordionItem>

@@ -22,8 +22,8 @@ import {
   DocumentAdd24Regular,
   Clock24Regular,
 } from "@fluentui/react-icons";
-import { PresentationOutline, SlideOutline } from '../types';
-import SlideEditor from './SlideEditor';
+import { PresentationOutline, SlideOutline } from "../types";
+import SlideEditor from "./SlideEditor";
 
 interface OutlineEditorProps {
   outline: PresentationOutline | null;
@@ -60,12 +60,12 @@ const useStyles = makeStyles({
     marginBottom: "16px",
   },
   durationInput: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
   },
   durationField: {
-    width: '80px',
+    width: "80px",
   },
   actionButtons: {
     display: "flex",
@@ -105,79 +105,105 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
     setEditingOutline(outline);
   }, [outline]);
 
-  const updateOutline = useCallback((updatedOutline: PresentationOutline) => {
-    setEditingOutline(updatedOutline);
-    onOutlineUpdate(updatedOutline);
-  }, [onOutlineUpdate]);
+  const updateOutline = useCallback(
+    (updatedOutline: PresentationOutline) => {
+      setEditingOutline(updatedOutline);
+      onOutlineUpdate(updatedOutline);
+    },
+    [onOutlineUpdate]
+  );
 
   // プレゼンテーションタイトルの更新
-  const updateTitle = useCallback((newTitle: string) => {
-    if (!editingOutline) return;
-    const updated = { ...editingOutline, title: newTitle };
-    updateOutline(updated);
-  }, [editingOutline, updateOutline]);
+  const updateTitle = useCallback(
+    (newTitle: string) => {
+      if (!editingOutline) return;
+      const updated = { ...editingOutline, title: newTitle };
+      updateOutline(updated);
+    },
+    [editingOutline, updateOutline]
+  );
 
   // 予想時間の更新
-  const updateDuration = useCallback((newDuration: number) => {
-    if (!editingOutline) return;
-    const updated = { ...editingOutline, estimatedDuration: newDuration };
-    updateOutline(updated);
-  }, [editingOutline, updateOutline]);
+  const updateDuration = useCallback(
+    (newDuration: number) => {
+      if (!editingOutline) return;
+      const updated = { ...editingOutline, estimatedDuration: newDuration };
+      updateOutline(updated);
+    },
+    [editingOutline, updateOutline]
+  );
 
   // スライドタイトルの更新
-  const updateSlideTitle = useCallback((slideIndex: number, newTitle: string) => {
-    if (!editingOutline) return;
-    const updatedSlides = [...editingOutline.slides];
-    updatedSlides[slideIndex] = { ...updatedSlides[slideIndex], title: newTitle };
-    const updated = { ...editingOutline, slides: updatedSlides };
-    updateOutline(updated);
-  }, [editingOutline, updateOutline]);
+  const updateSlideTitle = useCallback(
+    (slideIndex: number, newTitle: string) => {
+      if (!editingOutline) return;
+      const updatedSlides = [...editingOutline.slides];
+      updatedSlides[slideIndex] = { ...updatedSlides[slideIndex], title: newTitle };
+      const updated = { ...editingOutline, slides: updatedSlides };
+      updateOutline(updated);
+    },
+    [editingOutline, updateOutline]
+  );
 
   // スライドコンテンツの更新
-  const updateSlideContent = useCallback((slideIndex: number, contentIndex: number, newContent: string) => {
-    if (!editingOutline) return;
-    const updatedSlides = [...editingOutline.slides];
-    const updatedContent = [...updatedSlides[slideIndex].content];
-    updatedContent[contentIndex] = newContent;
-    updatedSlides[slideIndex] = { ...updatedSlides[slideIndex], content: updatedContent };
-    const updated = { ...editingOutline, slides: updatedSlides };
-    updateOutline(updated);
-  }, [editingOutline, updateOutline]);
+  const updateSlideContent = useCallback(
+    (slideIndex: number, contentIndex: number, newContent: string) => {
+      if (!editingOutline) return;
+      const updatedSlides = [...editingOutline.slides];
+      const updatedContent = [...updatedSlides[slideIndex].content];
+      updatedContent[contentIndex] = newContent;
+      updatedSlides[slideIndex] = { ...updatedSlides[slideIndex], content: updatedContent };
+      const updated = { ...editingOutline, slides: updatedSlides };
+      updateOutline(updated);
+    },
+    [editingOutline, updateOutline]
+  );
 
   // コンテンツアイテムの追加
-  const addContentItem = useCallback((slideIndex: number) => {
-    if (!editingOutline) return;
-    const updatedSlides = [...editingOutline.slides];
-    updatedSlides[slideIndex] = {
-      ...updatedSlides[slideIndex],
-      content: [...updatedSlides[slideIndex].content, "新しいポイント"]
-    };
-    const updated = { ...editingOutline, slides: updatedSlides };
-    updateOutline(updated);
-  }, [editingOutline, updateOutline]);
+  const addContentItem = useCallback(
+    (slideIndex: number) => {
+      if (!editingOutline) return;
+      const updatedSlides = [...editingOutline.slides];
+      updatedSlides[slideIndex] = {
+        ...updatedSlides[slideIndex],
+        content: [...updatedSlides[slideIndex].content, "新しいポイント"],
+      };
+      const updated = { ...editingOutline, slides: updatedSlides };
+      updateOutline(updated);
+    },
+    [editingOutline, updateOutline]
+  );
 
   // コンテンツアイテムの削除
-  const removeContentItem = useCallback((slideIndex: number, contentIndex: number) => {
-    if (!editingOutline) return;
-    const updatedSlides = [...editingOutline.slides];
-    const updatedContent = updatedSlides[slideIndex].content.filter((_, idx) => idx !== contentIndex);
-    updatedSlides[slideIndex] = { ...updatedSlides[slideIndex], content: updatedContent };
-    const updated = { ...editingOutline, slides: updatedSlides };
-    updateOutline(updated);
-  }, [editingOutline, updateOutline]);
+  const removeContentItem = useCallback(
+    (slideIndex: number, contentIndex: number) => {
+      if (!editingOutline) return;
+      const updatedSlides = [...editingOutline.slides];
+      const updatedContent = updatedSlides[slideIndex].content.filter(
+        (_, idx) => idx !== contentIndex
+      );
+      updatedSlides[slideIndex] = { ...updatedSlides[slideIndex], content: updatedContent };
+      const updated = { ...editingOutline, slides: updatedSlides };
+      updateOutline(updated);
+    },
+    [editingOutline, updateOutline]
+  );
 
   // スライドの削除
-  const removeSlide = useCallback((slideIndex: number) => {
-    if (!editingOutline) return;
-    const updatedSlides = editingOutline.slides.filter((_, idx) => idx !== slideIndex);
-    // スライド番号を再調整
-    const reindexedSlides = updatedSlides.map((slide, idx) => ({
-      ...slide,
-      slideNumber: idx + 1
-    }));
-    const updated = { ...editingOutline, slides: reindexedSlides };
-    updateOutline(updated);
-  }, [editingOutline, updateOutline]);
+  const removeSlide = useCallback(
+    (slideIndex: number) => {
+      if (!editingOutline) return;
+      const updatedSlides = editingOutline.slides.filter((_, idx) => idx !== slideIndex);
+      // スライド番号を再調整
+      const reindexedSlides = updatedSlides.map((slide, idx) => ({
+        ...slide,
+        slideNumber: idx + 1,
+      }));
+      const updated = { ...editingOutline, slides: reindexedSlides };
+      updateOutline(updated);
+    },
+    [editingOutline, updateOutline]
+  );
 
   // 新しいスライドの追加
   const addSlide = useCallback(() => {
@@ -186,35 +212,38 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
       slideNumber: editingOutline.slides.length + 1,
       title: "新しいスライド",
       content: ["新しいポイント"],
-      slideType: 'content'
+      slideType: "content",
     };
-    const updated = { 
-      ...editingOutline, 
-      slides: [...editingOutline.slides, newSlide] 
+    const updated = {
+      ...editingOutline,
+      slides: [...editingOutline.slides, newSlide],
     };
     updateOutline(updated);
   }, [editingOutline, updateOutline]);
 
   // スライドの順序変更
-  const moveSlide = useCallback((slideIndex: number, direction: 'up' | 'down') => {
-    if (!editingOutline) return;
-    const slides = [...editingOutline.slides];
-    const newIndex = direction === 'up' ? slideIndex - 1 : slideIndex + 1;
-    
-    if (newIndex < 0 || newIndex >= slides.length) return;
-    
-    // スライドを交換
-    [slides[slideIndex], slides[newIndex]] = [slides[newIndex], slides[slideIndex]];
-    
-    // スライド番号を再調整
-    const reindexedSlides = slides.map((slide, idx) => ({
-      ...slide,
-      slideNumber: idx + 1
-    }));
-    
-    const updated = { ...editingOutline, slides: reindexedSlides };
-    updateOutline(updated);
-  }, [editingOutline, updateOutline]);
+  const moveSlide = useCallback(
+    (slideIndex: number, direction: "up" | "down") => {
+      if (!editingOutline) return;
+      const slides = [...editingOutline.slides];
+      const newIndex = direction === "up" ? slideIndex - 1 : slideIndex + 1;
+
+      if (newIndex < 0 || newIndex >= slides.length) return;
+
+      // スライドを交換
+      [slides[slideIndex], slides[newIndex]] = [slides[newIndex], slides[slideIndex]];
+
+      // スライド番号を再調整
+      const reindexedSlides = slides.map((slide, idx) => ({
+        ...slide,
+        slideNumber: idx + 1,
+      }));
+
+      const updated = { ...editingOutline, slides: reindexedSlides };
+      updateOutline(updated);
+    },
+    [editingOutline, updateOutline]
+  );
 
   // 再生成の実行
   const handleRegenerate = useCallback(() => {
@@ -228,7 +257,9 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
   if (!editingOutline) {
     return (
       <div className={styles.container}>
-        <Text>アウトラインが生成されていません。チャットでプレゼンテーションの要件を入力してください。</Text>
+        <Text>
+          アウトラインが生成されていません。チャットでプレゼンテーションの要件を入力してください。
+        </Text>
       </div>
     );
   }
@@ -237,9 +268,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
     <div className={styles.container}>
       {/* プレゼンテーション全体情報 */}
       <Card className={styles.headerCard}>
-        <CardHeader 
-          header={<Text weight="semibold">プレゼンテーション概要</Text>}
-        />
+        <CardHeader header={<Text weight="semibold">プレゼンテーション概要</Text>} />
         <CardPreview>
           <div className={styles.titleSection}>
             <Field label="タイトル" style={{ flex: 1 }}>
@@ -252,7 +281,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
               />
             </Field>
           </div>
-          
+
           <div className={styles.metaInfo}>
             <Badge appearance="outline" icon={<DocumentAdd24Regular />}>
               {editingOutline.slides.length} スライド
@@ -308,7 +337,7 @@ const OutlineEditor: React.FC<OutlineEditorProps> = ({
 
       {/* 再生成セクション */}
       <div className={styles.regenerateSection}>
-        <Text weight="semibold" style={{ marginBottom: '12px' }}>
+        <Text weight="semibold" style={{ marginBottom: "12px" }}>
           AIによる再生成
         </Text>
         <Field label="追加指示・修正要望" className={styles.regenerateField}>

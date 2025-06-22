@@ -6,7 +6,7 @@ import {
   TabValue,
   SelectTabData,
   SelectTabEvent,
-  makeStyles
+  makeStyles,
 } from "@fluentui/react-components";
 import { Chat24Regular, Settings24Regular, Apps24Regular } from "@fluentui/react-icons";
 import Header from "./Header";
@@ -46,7 +46,7 @@ const App: React.FC<AppProps> = (props: AppProps) => {
   useEffect(() => {
     const loadSettings = () => {
       try {
-        const savedSettings = localStorage.getItem('powerpoint-concierge-settings');
+        const savedSettings = localStorage.getItem("powerpoint-concierge-settings");
         if (savedSettings) {
           const parsed = JSON.parse(savedSettings);
           setOpenAISettings(parsed);
@@ -67,7 +67,7 @@ const App: React.FC<AppProps> = (props: AppProps) => {
   const handleSendMessage = async (message: string) => {
     console.log("Sending message:", message);
     console.log("Current settings:", openAISettings);
-    
+
     // この関数は現在ChatInputコンポーネント内で処理されているため、
     // ここでは簡単なログ出力のみ行う
     return new Promise<void>((resolve) => {
@@ -84,12 +84,8 @@ const App: React.FC<AppProps> = (props: AppProps) => {
 
   return (
     <div className={styles.root}>
-      <Header 
-        logo="assets/logo-filled.png" 
-        title={props.title} 
-        message="PowerPoint Concierge" 
-      />
-      
+      <Header logo="assets/logo-filled.png" title={props.title} message="PowerPoint Concierge" />
+
       <div className={styles.tabContainer}>
         <TabList selectedValue={selectedTab} onTabSelect={onTabSelect}>
           <Tab id="chat" value="chat" icon={<Chat24Regular />}>
@@ -105,24 +101,19 @@ const App: React.FC<AppProps> = (props: AppProps) => {
 
         <div className={styles.tabContent}>
           {selectedTab === "chat" && (
-            <ChatInput 
-              onSendMessage={handleSendMessage}
-              settings={openAISettings}
-            />
+            <ChatInput onSendMessage={handleSendMessage} settings={openAISettings} />
           )}
           {selectedTab === "templates" && (
             <TemplateManager
               onTemplateCreated={(template) => {
-                console.log('Template created:', template);
+                console.log("Template created:", template);
               }}
               onTemplateDeleted={(templateId) => {
-                console.log('Template deleted:', templateId);
+                console.log("Template deleted:", templateId);
               }}
             />
           )}
-          {selectedTab === "settings" && (
-            <Settings onSettingsChange={handleSettingsChange} />
-          )}
+          {selectedTab === "settings" && <Settings onSettingsChange={handleSettingsChange} />}
         </div>
       </div>
     </div>

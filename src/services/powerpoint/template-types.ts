@@ -1,5 +1,6 @@
 // Template Integration System Types
 // テンプレート統合システムの型定義
+/* global File */
 
 export interface TemplateInfo {
   id: string;
@@ -14,13 +15,13 @@ export interface TemplateInfo {
 
 export interface TemplateMetadata {
   industry?: string[];
-  presentationStyle: 'formal' | 'casual' | 'technical' | 'creative' | 'minimal';
-  targetAudience: 'executive' | 'technical' | 'general' | 'academic' | 'sales';
+  presentationStyle: "formal" | "casual" | "technical" | "creative" | "minimal";
+  targetAudience: "executive" | "technical" | "general" | "academic" | "sales";
   slideCount: number;
-  colorSchemeType: 'corporate' | 'vibrant' | 'minimal' | 'academic' | 'creative';
-  layoutComplexity: 'simple' | 'moderate' | 'complex';
-  contentDensity: 'low' | 'medium' | 'high';
-  purpose: 'pitch' | 'report' | 'training' | 'marketing' | 'analysis';
+  colorSchemeType: "corporate" | "vibrant" | "minimal" | "academic" | "creative";
+  layoutComplexity: "simple" | "moderate" | "complex";
+  contentDensity: "low" | "medium" | "high";
+  purpose: "pitch" | "report" | "training" | "marketing" | "analysis";
   tags: string[];
   registeredAt: Date;
   lastUsed?: Date;
@@ -28,10 +29,10 @@ export interface TemplateMetadata {
 }
 
 export interface DesignPattern {
-  type: 'layout' | 'color' | 'typography' | 'spacing' | 'imagery';
+  type: "layout" | "color" | "typography" | "spacing" | "imagery";
   pattern: string;
   frequency: number;
-  importance: 'critical' | 'important' | 'optional';
+  importance: "critical" | "important" | "optional";
   description: string;
   rules: PatternRule[];
 }
@@ -50,8 +51,8 @@ export interface TemplateStructure {
 }
 
 export interface SlideTypePattern {
-  position: number | 'any' | 'first' | 'last';
-  type: 'title' | 'agenda' | 'content' | 'comparison' | 'conclusion' | 'transition';
+  position: number | "any" | "first" | "last";
+  type: "title" | "agenda" | "content" | "comparison" | "conclusion" | "transition";
   frequency: number;
   required: boolean;
   variations: string[];
@@ -73,11 +74,11 @@ export interface NavigationPattern {
 
 export interface VisualHierarchyPattern {
   level: number;
-  element: 'title' | 'subtitle' | 'content' | 'accent';
+  element: "title" | "subtitle" | "content" | "accent";
   fontSize: number;
   fontWeight: string;
   color: string;
-  positioning: 'top' | 'center' | 'bottom' | 'left' | 'right';
+  positioning: "top" | "center" | "bottom" | "left" | "right";
 }
 
 export interface TemplateCompatibility {
@@ -87,15 +88,15 @@ export interface TemplateCompatibility {
   apiRequirements: string[];
 }
 
-export type TemplateCategory = 
-  | 'business' 
-  | 'academic' 
-  | 'creative' 
-  | 'technical' 
-  | 'marketing' 
-  | 'corporate'
-  | 'minimal'
-  | 'custom';
+export type TemplateCategory =
+  | "business"
+  | "academic"
+  | "creative"
+  | "technical"
+  | "marketing"
+  | "corporate"
+  | "minimal"
+  | "custom";
 
 export interface TemplateRecommendation {
   template: TemplateInfo;
@@ -105,7 +106,7 @@ export interface TemplateRecommendation {
 }
 
 export interface TemplateAdaptation {
-  type: 'content' | 'layout' | 'style' | 'structure';
+  type: "content" | "layout" | "style" | "structure";
   description: string;
   confidence: number;
   changes: AdaptationChange[];

@@ -14,7 +14,7 @@ import {
   makeStyles,
   Switch,
   Label,
-  Divider
+  Divider,
 } from "@fluentui/react-components";
 import { Settings24Regular, Save24Regular } from "@fluentui/react-icons";
 
@@ -89,7 +89,7 @@ const Settings: React.FC<SettingsProps> = ({ onSettingsChange }) => {
 
   // コンポーネントマウント時に保存された設定を読み込み
   useEffect(() => {
-    const savedSettings = localStorage.getItem('powerpoint-concierge-settings');
+    const savedSettings = localStorage.getItem("powerpoint-concierge-settings");
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
@@ -101,16 +101,16 @@ const Settings: React.FC<SettingsProps> = ({ onSettingsChange }) => {
   }, []);
 
   const handleSettingChange = (key: keyof OpenAISettings, value: string | number) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }));
     setIsSaved(false);
   };
 
   const handleSaveSettings = () => {
     try {
-      localStorage.setItem('powerpoint-concierge-settings', JSON.stringify(settings));
+      localStorage.setItem("powerpoint-concierge-settings", JSON.stringify(settings));
       onSettingsChange(settings);
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 2000);
@@ -134,7 +134,9 @@ const Settings: React.FC<SettingsProps> = ({ onSettingsChange }) => {
     <div className={styles.settingsContainer}>
       <div className={styles.settingsHeader}>
         <Settings24Regular />
-        <Text weight="semibold" size={400}>設定</Text>
+        <Text weight="semibold" size={400}>
+          設定
+        </Text>
       </div>
 
       <div className={styles.warning}>
@@ -152,7 +154,7 @@ const Settings: React.FC<SettingsProps> = ({ onSettingsChange }) => {
                 type="password"
                 placeholder="sk-..."
                 value={settings.apiKey}
-                onChange={(e) => handleSettingChange('apiKey', e.target.value)}
+                onChange={(e) => handleSettingChange("apiKey", e.target.value)}
               />
             </Field>
 
@@ -160,7 +162,7 @@ const Settings: React.FC<SettingsProps> = ({ onSettingsChange }) => {
               <Input
                 placeholder="https://api.openai.com/v1"
                 value={settings.baseUrl}
-                onChange={(e) => handleSettingChange('baseUrl', e.target.value)}
+                onChange={(e) => handleSettingChange("baseUrl", e.target.value)}
               />
             </Field>
 
@@ -171,11 +173,11 @@ const Settings: React.FC<SettingsProps> = ({ onSettingsChange }) => {
                 onOptionSelect={(e, data) => {
                   if (data.optionValue) {
                     console.log(e);
-                    handleSettingChange('model', data.optionValue);
+                    handleSettingChange("model", data.optionValue);
                   }
                 }}
               >
-                {availableModels.map(model => (
+                {availableModels.map((model) => (
                   <Option key={model.key} value={model.key}>
                     {model.text}
                   </Option>
@@ -201,7 +203,7 @@ const Settings: React.FC<SettingsProps> = ({ onSettingsChange }) => {
           <CardHeader header={<Text weight="semibold">詳細設定</Text>} />
           <CardPreview>
             <div className={styles.fieldGroup}>
-              <Field 
+              <Field
                 label={`Temperature (${settings.temperature})`}
                 hint="0.0-2.0の範囲で指定。高いほど創造的な回答になります。"
               >
@@ -211,20 +213,17 @@ const Settings: React.FC<SettingsProps> = ({ onSettingsChange }) => {
                   max="2"
                   step="0.1"
                   value={settings.temperature.toString()}
-                  onChange={(e) => handleSettingChange('temperature', parseFloat(e.target.value))}
+                  onChange={(e) => handleSettingChange("temperature", parseFloat(e.target.value))}
                 />
               </Field>
 
-              <Field 
-                label="最大トークン数"
-                hint="回答の最大長を制御します。"
-              >
+              <Field label="最大トークン数" hint="回答の最大長を制御します。">
                 <Input
                   type="number"
                   min="100"
                   max="4000"
                   value={settings.maxTokens.toString()}
-                  onChange={(e) => handleSettingChange('maxTokens', parseInt(e.target.value))}
+                  onChange={(e) => handleSettingChange("maxTokens", parseInt(e.target.value))}
                 />
               </Field>
             </div>

@@ -1,5 +1,6 @@
 // TemplateBasedGenerationService.ts
 // テンプレートベースのスマート生成サービス
+/* global console, localStorage */
 
 import {
   TemplateInfo,
@@ -9,9 +10,9 @@ import {
   AdaptedOutline,
   TemplateCategory,
   TemplateRegistrationRequest,
-  TemplateUsageStats
-} from '../template-types';
-import { TemplateAdaptationService } from './TemplateAdaptationService';
+  TemplateUsageStats,
+} from "../template-types";
+import { TemplateAdaptationService } from "./TemplateAdaptationService";
 
 export class TemplateBasedGenerationService {
   private adaptationService: TemplateAdaptationService;
@@ -34,7 +35,7 @@ export class TemplateBasedGenerationService {
 
       if (request.file) {
         // ファイルベースの登録
-        templateInfo = await this.registerTemplateFromFile(request);
+        templateInfo = await this.registerTemplateFromFile();
       } else {
         // 現在のプレゼンテーションから登録
         templateInfo = await this.registerCurrentPresentationAsTemplate(request);
@@ -42,7 +43,7 @@ export class TemplateBasedGenerationService {
 
       // ライブラリに追加
       this.addTemplateToLibrary(templateInfo);
-      
+
       // 使用統計の初期化
       this.usageStats.set(templateInfo.id, {
         templateId: templateInfo.id,
@@ -50,14 +51,14 @@ export class TemplateBasedGenerationService {
         lastUsed: new Date(),
         averageRating: 0,
         userFeedback: [],
-        successRate: 0
+        successRate: 0,
       });
 
       await this.saveTemplateLibrary();
-      
+
       return templateInfo;
     } catch (error) {
-      console.error('Template registration failed:', error);
+      console.error("Template registration failed:", error);
       throw new Error(`テンプレートの登録に失敗しました: ${error.message}`);
     }
   }
@@ -76,26 +77,25 @@ export class TemplateBasedGenerationService {
         preferences: {
           maxResults: 5,
           minimumScore: 0.3,
-          ...criteria?.preferences
-        }
+          ...criteria?.preferences,
+        },
       };
 
       // AI分析によるコンテキスト抽出
       const analyzedContext = await this.analyzeUserInput(userInput);
-      
+
       // テンプレートスコアリング
       const scoredTemplates = await this.scoreTemplates(analyzedContext, selectionCriteria);
-      
+
       // 上位テンプレートの推奨理由生成
       const recommendations = await this.generateRecommendations(scoredTemplates, analyzedContext);
-      
-      return recommendations
-        .filter(r => r.score >= selectionCriteria.preferences.minimumScore!)
-        .slice(0, selectionCriteria.preferences.maxResults);
 
+      return recommendations
+        .filter((r) => r.score >= selectionCriteria.preferences.minimumScore!)
+        .slice(0, selectionCriteria.preferences.maxResults);
     } catch (error) {
-      console.error('Template selection failed:', error);
-      
+      console.error("Template selection failed:", error);
+
       // フォールバック: デフォルトテンプレートを返す
       return this.getDefaultRecommendations();
     }
@@ -104,10 +104,7 @@ export class TemplateBasedGenerationService {
   /**
    * アウトラインをテンプレートに適応
    */
-  async adaptOutlineToTemplate(
-    outline: any,
-    templateId: string
-  ): Promise<AdaptedOutline> {
+  async adaptOutlineToTemplate(outline: any, templateId: string): Promise<AdaptedOutline> {
     const template = this.getTemplateById(templateId);
     if (!template) {
       throw new Error(`Template not found: ${templateId}`);
@@ -115,13 +112,13 @@ export class TemplateBasedGenerationService {
 
     try {
       const adaptedOutline = await this.adaptationService.adaptOutlineToTemplate(outline, template);
-      
+
       // 使用統計の更新
       this.updateTemplateUsage(templateId);
-      
+
       return adaptedOutline;
     } catch (error) {
-      console.error('Outline adaptation failed:', error);
+      console.error("Outline adaptation failed:", error);
       throw error;
     }
   }
@@ -140,9 +137,13 @@ export class TemplateBasedGenerationService {
 
       for (let i = 0; i < totalSlides; i++) {
         const slide = adaptedOutline.adaptedSlides[i];
-        
+
         if (progressCallback) {
-          progressCallback(i + 1, totalSlides, `テンプレート最適化中: ${slide.adaptedContent.title}`);
+          progressCallback(
+            i + 1,
+            totalSlides,
+            `テンプレート最適化中: ${slide.adaptedContent.title}`
+          );
         }
 
         try {
@@ -156,7 +157,7 @@ export class TemplateBasedGenerationService {
           results.push(optimizedContent);
         } catch (error) {
           console.error(`Failed to optimize slide ${i + 1}:`, error);
-          
+
           // フォールバック: 基本的なコンテンツを使用
           results.push(this.createFallbackContent(slide));
         }
@@ -164,7 +165,7 @@ export class TemplateBasedGenerationService {
 
       return results;
     } catch (error) {
-      console.error('Template-optimized content generation failed:', error);
+      console.error("Template-optimized content generation failed:", error);
       throw error;
     }
   }
@@ -186,19 +187,22 @@ export class TemplateBasedGenerationService {
   /**
    * テンプレート検索
    */
-  searchTemplates(query: string, filters?: {
-    categories?: TemplateCategory[];
-    industry?: string[];
-    purpose?: string[];
-  }): TemplateInfo[] {
+  searchTemplates(
+    query: string,
+    filters?: {
+      categories?: TemplateCategory[];
+      industry?: string[];
+      purpose?: string[];
+    }
+  ): TemplateInfo[] {
     const queryLower = query.toLowerCase();
-    
-    return this.templateLibrary.templates.filter(template => {
+
+    return this.templateLibrary.templates.filter((template) => {
       // テキスト検索
-      const matchesQuery = 
+      const matchesQuery =
         template.name.toLowerCase().includes(queryLower) ||
         template.description?.toLowerCase().includes(queryLower) ||
-        template.metadata.tags.some(tag => tag.toLowerCase().includes(queryLower));
+        template.metadata.tags.some((tag) => tag.toLowerCase().includes(queryLower));
 
       if (!matchesQuery) return false;
 
@@ -208,7 +212,7 @@ export class TemplateBasedGenerationService {
       }
 
       if (filters?.industry && template.metadata.industry) {
-        const hasMatchingIndustry = filters.industry.some(industry =>
+        const hasMatchingIndustry = filters.industry.some((industry) =>
           template.metadata.industry!.includes(industry)
         );
         if (!hasMatchingIndustry) return false;
@@ -226,31 +230,31 @@ export class TemplateBasedGenerationService {
    * 人気テンプレートの取得
    */
   getPopularTemplates(limit: number = 10): TemplateInfo[] {
-    const templatesWithUsage = this.templateLibrary.templates.map(template => ({
+    const templatesWithUsage = this.templateLibrary.templates.map((template) => ({
       template,
-      usage: this.usageStats.get(template.id)
+      usage: this.usageStats.get(template.id),
     }));
 
     return templatesWithUsage
       .sort((a, b) => (b.usage?.usageCount || 0) - (a.usage?.usageCount || 0))
       .slice(0, limit)
-      .map(item => item.template);
+      .map((item) => item.template);
   }
 
   /**
    * 最近使用したテンプレートの取得
    */
   getRecentTemplates(limit: number = 5): TemplateInfo[] {
-    const templatesWithUsage = this.templateLibrary.templates.map(template => ({
+    const templatesWithUsage = this.templateLibrary.templates.map((template) => ({
       template,
-      usage: this.usageStats.get(template.id)
+      usage: this.usageStats.get(template.id),
     }));
 
     return templatesWithUsage
-      .filter(item => item.usage?.lastUsed)
+      .filter((item) => item.usage?.lastUsed)
       .sort((a, b) => b.usage!.lastUsed.getTime() - a.usage!.lastUsed.getTime())
       .slice(0, limit)
-      .map(item => item.template);
+      .map((item) => item.template);
   }
 
   /**
@@ -281,9 +285,9 @@ export class TemplateBasedGenerationService {
     // 成功率の更新
     if (success !== undefined) {
       // 簡単な成功率計算（実際の実装ではより複雑な計算を行う）
-      stats.successRate = success ? 
-        Math.min(1.0, (stats.successRate || 0) + 0.1) : 
-        Math.max(0.0, (stats.successRate || 0) - 0.1);
+      stats.successRate = success
+        ? Math.min(1.0, (stats.successRate || 0) + 0.1)
+        : Math.max(0.0, (stats.successRate || 0) - 0.1);
     }
 
     this.saveUsageStats();
@@ -296,7 +300,7 @@ export class TemplateBasedGenerationService {
       suggestedCategory: this.suggestCategory(userInput),
       estimatedComplexity: this.estimateComplexity(userInput),
       detectedPurpose: this.detectPurpose(userInput),
-      audienceLevel: this.detectAudienceLevel(userInput)
+      audienceLevel: this.detectAudienceLevel(userInput),
     };
 
     return analysis;
@@ -304,19 +308,18 @@ export class TemplateBasedGenerationService {
 
   private async scoreTemplates(
     analyzedContext: any,
-    criteria: TemplateSelectionCriteria
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _criteria: TemplateSelectionCriteria
   ): Promise<Array<{ template: TemplateInfo; score: number }>> {
-    return this.templateLibrary.templates.map(template => ({
-      template,
-      score: this.calculateTemplateScore(template, analyzedContext, criteria)
-    })).sort((a, b) => b.score - a.score);
+    return this.templateLibrary.templates
+      .map((template) => ({
+        template,
+        score: this.calculateTemplateScore(template, analyzedContext),
+      }))
+      .sort((a, b) => b.score - a.score);
   }
 
-  private calculateTemplateScore(
-    template: TemplateInfo,
-    context: any,
-    _criteria: TemplateSelectionCriteria
-  ): number {
+  private calculateTemplateScore(template: TemplateInfo, context: any): number {
     let score = 0;
 
     // カテゴリマッチング
@@ -356,7 +359,7 @@ export class TemplateBasedGenerationService {
       template,
       score,
       reasoning: this.generateReasoningForTemplate(template, context, score),
-      adaptations: this.suggestAdaptations(template, context)
+      adaptations: this.suggestAdaptations(template),
     }));
   }
 
@@ -376,96 +379,99 @@ export class TemplateBasedGenerationService {
     }
 
     if (score > 0.8) {
-      reasons.push('高い適合度を示しています');
+      reasons.push("高い適合度を示しています");
     } else if (score > 0.6) {
-      reasons.push('良好な適合度があります');
+      reasons.push("良好な適合度があります");
     }
 
     const usage = this.usageStats.get(template.id);
     if (usage && usage.usageCount > 10) {
-      reasons.push('多くのユーザーに使用されています');
+      reasons.push("多くのユーザーに使用されています");
     }
 
     return reasons;
   }
 
-  private suggestAdaptations(template: TemplateInfo, _context: any): any[] {
+  private suggestAdaptations(template: TemplateInfo): any[] {
     // 基本的な適応提案
     return [
       {
-        type: 'style',
+        type: "style",
         description: `${template.metadata.presentationStyle}スタイルに調整`,
         confidence: 0.8,
-        changes: []
-      }
+        changes: [],
+      },
     ];
   }
 
   private extractKeywords(userInput: string): string[] {
     // 簡単なキーワード抽出
-    return userInput.toLowerCase().split(/\s+/).filter(word => word.length > 2);
+    return userInput
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((word) => word.length > 2);
   }
 
   private suggestCategory(userInput: string): TemplateCategory {
     const input = userInput.toLowerCase();
-    
-    if (input.includes('ビジネス') || input.includes('提案') || input.includes('営業')) {
-      return 'business';
+
+    if (input.includes("ビジネス") || input.includes("提案") || input.includes("営業")) {
+      return "business";
     }
-    if (input.includes('学術') || input.includes('研究') || input.includes('論文')) {
-      return 'academic';
+    if (input.includes("学術") || input.includes("研究") || input.includes("論文")) {
+      return "academic";
     }
-    if (input.includes('マーケティング') || input.includes('広告') || input.includes('宣伝')) {
-      return 'marketing';
+    if (input.includes("マーケティング") || input.includes("広告") || input.includes("宣伝")) {
+      return "marketing";
     }
-    if (input.includes('技術') || input.includes('エンジニア') || input.includes('開発')) {
-      return 'technical';
+    if (input.includes("技術") || input.includes("エンジニア") || input.includes("開発")) {
+      return "technical";
     }
-    
-    return 'business'; // デフォルト
+
+    return "business"; // デフォルト
   }
 
-  private estimateComplexity(userInput: string): 'simple' | 'moderate' | 'complex' {
+  private estimateComplexity(userInput: string): "simple" | "moderate" | "complex" {
     const wordCount = userInput.split(/\s+/).length;
-    
-    if (wordCount < 50) return 'simple';
-    if (wordCount < 200) return 'moderate';
-    return 'complex';
+
+    if (wordCount < 50) return "simple";
+    if (wordCount < 200) return "moderate";
+    return "complex";
   }
 
   private detectPurpose(userInput: string): string {
     const input = userInput.toLowerCase();
-    
-    if (input.includes('提案') || input.includes('ピッチ') || input.includes('営業')) {
-      return 'pitch';
+
+    if (input.includes("提案") || input.includes("ピッチ") || input.includes("営業")) {
+      return "pitch";
     }
-    if (input.includes('報告') || input.includes('レポート') || input.includes('結果')) {
-      return 'report';
+    if (input.includes("報告") || input.includes("レポート") || input.includes("結果")) {
+      return "report";
     }
-    if (input.includes('研修') || input.includes('トレーニング') || input.includes('教育')) {
-      return 'training';
+    if (input.includes("研修") || input.includes("トレーニング") || input.includes("教育")) {
+      return "training";
     }
-    if (input.includes('分析') || input.includes('データ') || input.includes('統計')) {
-      return 'analysis';
+    if (input.includes("分析") || input.includes("データ") || input.includes("統計")) {
+      return "analysis";
     }
-    
-    return 'report'; // デフォルト
+
+    return "report"; // デフォルト
   }
 
   private detectAudienceLevel(userInput: string): string {
     const input = userInput.toLowerCase();
-    
-    if (input.includes('経営') || input.includes('役員') || input.includes('マネージャー')) {
-      return 'executive';
+
+    if (input.includes("経営") || input.includes("役員") || input.includes("マネージャー")) {
+      return "executive";
     }
-    if (input.includes('技術') || input.includes('エンジニア') || input.includes('専門')) {
-      return 'technical';
+    if (input.includes("技術") || input.includes("エンジニア") || input.includes("専門")) {
+      return "technical";
     }
-    if (input.includes('学術') || input.includes('研究') || input.includes('大学')) {
-      return 'academic';
+    if (input.includes("学術") || input.includes("研究") || input.includes("大学")) {
+      return "academic";
     }
-    
-    return 'general'; // デフォルト
+
+    return "general"; // デフォルト
   }
 
   private async generateTemplateSpecificContent(
@@ -475,12 +481,12 @@ export class TemplateBasedGenerationService {
   ): Promise<any> {
     // テンプレート特化のプロンプト生成
     const prompt = this.buildTemplateSpecificPrompt(slide, template);
-    
+
     try {
       const response = await openAIService.generateContent(prompt);
       return this.parseTemplateOptimizedResponse(response, slide, template);
     } catch (error) {
-      console.error('Template-specific content generation failed:', error);
+      console.error("Template-specific content generation failed:", error);
       return this.createFallbackContent(slide);
     }
   }
@@ -515,19 +521,23 @@ JSON形式で回答:
 `;
   }
 
-  private parseTemplateOptimizedResponse(response: string, slide: any, template: TemplateInfo): any {
+  private parseTemplateOptimizedResponse(
+    response: string,
+    slide: any,
+    template: TemplateInfo
+  ): any {
     try {
       const parsed = JSON.parse(response);
       return {
         ...slide.adaptedContent,
         title: parsed.title || slide.adaptedContent.title,
         content: parsed.content || slide.adaptedContent.content,
-        speakerNotes: parsed.speakerNotes || '',
+        speakerNotes: parsed.speakerNotes || "",
         templateOptimizations: parsed.templateOptimizations || [],
-        appliedTemplate: template.name
+        appliedTemplate: template.name,
       };
     } catch (error) {
-      console.error('Failed to parse template-optimized response:', error);
+      console.error("Failed to parse template-optimized response:", error);
       return this.createFallbackContent(slide);
     }
   }
@@ -535,9 +545,9 @@ JSON形式で回答:
   private createFallbackContent(slide: any): any {
     return {
       ...slide.adaptedContent,
-      speakerNotes: 'テンプレート最適化でエラーが発生しました。基本コンテンツを使用しています。',
+      speakerNotes: "テンプレート最適化でエラーが発生しました。基本コンテンツを使用しています。",
       templateOptimizations: [],
-      appliedTemplate: 'fallback'
+      appliedTemplate: "fallback",
     };
   }
 
@@ -547,16 +557,18 @@ JSON形式で回答:
       return [];
     }
 
-    return [{
-      template: defaultTemplate,
-      score: 0.5,
-      reasoning: ['デフォルトテンプレートです'],
-      adaptations: []
-    }];
+    return [
+      {
+        template: defaultTemplate,
+        score: 0.5,
+        reasoning: ["デフォルトテンプレートです"],
+        adaptations: [],
+      },
+    ];
   }
 
   private getTemplateById(id: string): TemplateInfo | undefined {
-    return this.templateLibrary.templates.find(t => t.id === id);
+    return this.templateLibrary.templates.find((t) => t.id === id);
   }
 
   private updateTemplateUsage(templateId: string): void {
@@ -573,141 +585,141 @@ JSON形式で回答:
     const defaultTemplates: TemplateInfo[] = [
       this.createDefaultBusinessTemplate(),
       this.createDefaultAcademicTemplate(),
-      this.createDefaultMinimalTemplate()
+      this.createDefaultMinimalTemplate(),
     ];
 
     return {
       templates: defaultTemplates,
       categories: this.categorizeTemplates(defaultTemplates),
-      searchIndex: this.buildSearchIndex(defaultTemplates),
-      statistics: this.calculateLibraryStats(defaultTemplates)
+      searchIndex: this.buildSearchIndex(),
+      statistics: this.calculateLibraryStats(defaultTemplates),
     };
   }
 
   private createDefaultBusinessTemplate(): TemplateInfo {
     return {
-      id: 'default-business',
-      name: 'ビジネス標準',
-      description: 'ビジネスプレゼンテーション用の標準テンプレート',
-      category: 'business',
+      id: "default-business",
+      name: "ビジネス標準",
+      description: "ビジネスプレゼンテーション用の標準テンプレート",
+      category: "business",
       metadata: {
-        presentationStyle: 'formal',
-        targetAudience: 'executive',
+        presentationStyle: "formal",
+        targetAudience: "executive",
         slideCount: 10,
-        colorSchemeType: 'corporate',
-        layoutComplexity: 'moderate',
-        contentDensity: 'medium',
-        purpose: 'pitch',
-        tags: ['business', 'formal', 'corporate'],
+        colorSchemeType: "corporate",
+        layoutComplexity: "moderate",
+        contentDensity: "medium",
+        purpose: "pitch",
+        tags: ["business", "formal", "corporate"],
         registeredAt: new Date(),
-        usageCount: 0
+        usageCount: 0,
       },
       designPatterns: [],
       structure: {
         expectedSlideTypes: [
-          { position: 'first', type: 'title', frequency: 1, required: true, variations: [] },
-          { position: 'any', type: 'content', frequency: 0.8, required: true, variations: [] }
+          { position: "first", type: "title", frequency: 1, required: true, variations: [] },
+          { position: "any", type: "content", frequency: 0.8, required: true, variations: [] },
         ],
         contentFlow: [],
         navigationPattern: {
           hasAgenda: true,
           hasTableOfContents: false,
           sectionDividers: true,
-          backNavigation: false
+          backNavigation: false,
         },
-        visualHierarchy: []
+        visualHierarchy: [],
       },
       compatibility: {
-        powerPointVersion: ['2019', '365'],
-        supportedFeatures: ['themes', 'layouts'],
+        powerPointVersion: ["2019", "365"],
+        supportedFeatures: ["themes", "layouts"],
         limitations: [],
-        apiRequirements: ['PowerPoint.js']
-      }
+        apiRequirements: ["PowerPoint.js"],
+      },
     };
   }
 
   private createDefaultAcademicTemplate(): TemplateInfo {
     return {
-      id: 'default-academic',
-      name: '学術発表',
-      description: '学術発表・研究発表用テンプレート',
-      category: 'academic',
+      id: "default-academic",
+      name: "学術発表",
+      description: "学術発表・研究発表用テンプレート",
+      category: "academic",
       metadata: {
-        presentationStyle: 'formal',
-        targetAudience: 'academic',
+        presentationStyle: "formal",
+        targetAudience: "academic",
         slideCount: 15,
-        colorSchemeType: 'academic',
-        layoutComplexity: 'moderate',
-        contentDensity: 'high',
-        purpose: 'report',
-        tags: ['academic', 'research', 'formal'],
+        colorSchemeType: "academic",
+        layoutComplexity: "moderate",
+        contentDensity: "high",
+        purpose: "report",
+        tags: ["academic", "research", "formal"],
         registeredAt: new Date(),
-        usageCount: 0
+        usageCount: 0,
       },
       designPatterns: [],
       structure: {
         expectedSlideTypes: [
-          { position: 'first', type: 'title', frequency: 1, required: true, variations: [] },
-          { position: 2, type: 'agenda', frequency: 1, required: true, variations: [] },
-          { position: 'any', type: 'content', frequency: 0.9, required: true, variations: [] }
+          { position: "first", type: "title", frequency: 1, required: true, variations: [] },
+          { position: 2, type: "agenda", frequency: 1, required: true, variations: [] },
+          { position: "any", type: "content", frequency: 0.9, required: true, variations: [] },
         ],
         contentFlow: [],
         navigationPattern: {
           hasAgenda: true,
           hasTableOfContents: true,
           sectionDividers: true,
-          backNavigation: true
+          backNavigation: true,
         },
-        visualHierarchy: []
+        visualHierarchy: [],
       },
       compatibility: {
-        powerPointVersion: ['2019', '365'],
-        supportedFeatures: ['themes', 'layouts'],
+        powerPointVersion: ["2019", "365"],
+        supportedFeatures: ["themes", "layouts"],
         limitations: [],
-        apiRequirements: ['PowerPoint.js']
-      }
+        apiRequirements: ["PowerPoint.js"],
+      },
     };
   }
 
   private createDefaultMinimalTemplate(): TemplateInfo {
     return {
-      id: 'default-minimal',
-      name: 'ミニマル',
-      description: 'シンプルで洗練されたミニマルテンプレート',
-      category: 'minimal',
+      id: "default-minimal",
+      name: "ミニマル",
+      description: "シンプルで洗練されたミニマルテンプレート",
+      category: "minimal",
       metadata: {
-        presentationStyle: 'casual',
-        targetAudience: 'general',
+        presentationStyle: "casual",
+        targetAudience: "general",
         slideCount: 8,
-        colorSchemeType: 'minimal',
-        layoutComplexity: 'simple',
-        contentDensity: 'low',
-        purpose: 'pitch',
-        tags: ['minimal', 'simple', 'clean'],
+        colorSchemeType: "minimal",
+        layoutComplexity: "simple",
+        contentDensity: "low",
+        purpose: "pitch",
+        tags: ["minimal", "simple", "clean"],
         registeredAt: new Date(),
-        usageCount: 0
+        usageCount: 0,
       },
       designPatterns: [],
       structure: {
         expectedSlideTypes: [
-          { position: 'first', type: 'title', frequency: 1, required: true, variations: [] },
-          { position: 'any', type: 'content', frequency: 0.7, required: true, variations: [] }
+          { position: "first", type: "title", frequency: 1, required: true, variations: [] },
+          { position: "any", type: "content", frequency: 0.7, required: true, variations: [] },
         ],
         contentFlow: [],
         navigationPattern: {
           hasAgenda: false,
           hasTableOfContents: false,
           sectionDividers: false,
-          backNavigation: false
+          backNavigation: false,
         },
-        visualHierarchy: []
+        visualHierarchy: [],
       },
       compatibility: {
-        powerPointVersion: ['2019', '365'],
-        supportedFeatures: ['themes', 'layouts'],
+        powerPointVersion: ["2019", "365"],
+        supportedFeatures: ["themes", "layouts"],
         limitations: [],
-        apiRequirements: ['PowerPoint.js']
-      }
+        apiRequirements: ["PowerPoint.js"],
+      },
     };
   }
 
@@ -720,23 +732,23 @@ JSON形式で回答:
       marketing: [],
       corporate: [],
       minimal: [],
-      custom: []
+      custom: [],
     };
 
-    templates.forEach(template => {
+    templates.forEach((template) => {
       categories[template.category].push(template);
     });
 
     return categories;
   }
 
-  private buildSearchIndex(_templates: TemplateInfo[]): any {
+  private buildSearchIndex(): any {
     // 簡単な検索インデックス構築
     return {
       byIndustry: {},
       byStyle: {},
       byPurpose: {},
-      byTags: {}
+      byTags: {},
     };
   }
 
@@ -745,8 +757,8 @@ JSON形式で回答:
       totalTemplates: templates.length,
       byCategory: this.countByCategory(templates),
       mostUsed: [],
-      recentlyAdded: templates.slice(-3).map(t => t.id),
-      averageScore: 0
+      recentlyAdded: templates.slice(-3).map((t) => t.id),
+      averageScore: 0,
     };
   }
 
@@ -759,10 +771,10 @@ JSON形式で回答:
       marketing: 0,
       corporate: 0,
       minimal: 0,
-      custom: 0
+      custom: 0,
     };
 
-    templates.forEach(template => {
+    templates.forEach((template) => {
       counts[template.category]++;
     });
 
@@ -775,22 +787,24 @@ JSON形式で回答:
     this.templateLibrary.statistics = this.calculateLibraryStats(this.templateLibrary.templates);
   }
 
-  private async registerTemplateFromFile(_request: TemplateRegistrationRequest): Promise<TemplateInfo> {
+  private async registerTemplateFromFile(): Promise<TemplateInfo> {
     // ファイルベースの登録（将来的な実装）
-    throw new Error('File-based template registration not yet implemented');
+    throw new Error("File-based template registration not yet implemented");
   }
 
-  private async registerCurrentPresentationAsTemplate(request: TemplateRegistrationRequest): Promise<TemplateInfo> {
+  private async registerCurrentPresentationAsTemplate(
+    request: TemplateRegistrationRequest
+  ): Promise<TemplateInfo> {
     const detectedTemplate = await this.adaptationService.detectTemplate();
-    
+
     if (!detectedTemplate) {
-      throw new Error('現在のプレゼンテーションからテンプレートを検出できませんでした');
+      throw new Error("現在のプレゼンテーションからテンプレートを検出できませんでした");
     }
 
     // ユーザー提供のメタデータで更新
     detectedTemplate.metadata = {
       ...detectedTemplate.metadata,
-      ...request.metadata
+      ...request.metadata,
     };
 
     return detectedTemplate;
@@ -798,30 +812,30 @@ JSON形式で回答:
 
   private loadUsageStats(): void {
     try {
-      const saved = localStorage.getItem('template-usage-stats');
+      const saved = localStorage.getItem("template-usage-stats");
       if (saved) {
         const parsed = JSON.parse(saved);
         this.usageStats = new Map(Object.entries(parsed));
       }
     } catch (error) {
-      console.error('Failed to load usage stats:', error);
+      console.error("Failed to load usage stats:", error);
     }
   }
 
   private saveUsageStats(): void {
     try {
       const statsObject = Object.fromEntries(this.usageStats);
-      localStorage.setItem('template-usage-stats', JSON.stringify(statsObject));
+      localStorage.setItem("template-usage-stats", JSON.stringify(statsObject));
     } catch (error) {
-      console.error('Failed to save usage stats:', error);
+      console.error("Failed to save usage stats:", error);
     }
   }
 
   private async saveTemplateLibrary(): Promise<void> {
     try {
-      localStorage.setItem('template-library', JSON.stringify(this.templateLibrary));
+      localStorage.setItem("template-library", JSON.stringify(this.templateLibrary));
     } catch (error) {
-      console.error('Failed to save template library:', error);
+      console.error("Failed to save template library:", error);
     }
   }
 }

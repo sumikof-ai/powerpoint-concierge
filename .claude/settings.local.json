@@ -1,6 +1,16 @@
 {
   "permissions": {
     "allow": [
+      "Bash(npm run lint)",
+      "Bash(npm test)",
+      "Bash(npx jest:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run prettier:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(rg:*)"
     ],
     "deny": []
   }

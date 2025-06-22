@@ -12,7 +12,7 @@ export interface ChatMessage {
   id: string;
   content: string;
   timestamp: Date;
-  type: 'user' | 'assistant';
+  type: "user" | "assistant";
 }
 
 // プレゼンテーション関連の型定義（OutlineEditorからインポートして使用）
@@ -26,7 +26,7 @@ export interface SlideOutline {
   slideNumber: number;
   title: string;
   content: string[];
-  slideType: 'title' | 'content' | 'conclusion';
+  slideType: "title" | "content" | "conclusion";
   speakerNotes?: string;
 }
 
@@ -39,7 +39,7 @@ export interface SlideInfo {
 }
 
 // 段階的ワークフロー管理
-export type WorkflowStep = 'chat' | 'outline' | 'generating' | 'completed';
+export type WorkflowStep = "chat" | "outline" | "generating" | "completed";
 
 export interface WorkflowState {
   currentStep: WorkflowStep;
@@ -76,7 +76,7 @@ export interface OpenAIChoice {
 export interface OpenAIRequest {
   model: string;
   messages: {
-    role: 'system' | 'user' | 'assistant';
+    role: "system" | "user" | "assistant";
     content: string;
   }[];
   temperature?: number;
@@ -94,13 +94,13 @@ export interface APIError {
 export interface SlideGenerationOptions {
   includeTransitions?: boolean;
   useTemplate?: string;
-  slideLayout?: 'title' | 'content' | 'comparison' | 'blank';
+  slideLayout?: "title" | "content" | "comparison" | "blank";
 }
 
 // プレゼンテーション設定
 export interface PresentationSettings {
-  theme: 'light' | 'dark' | 'colorful';
-  fontSize: 'small' | 'medium' | 'large';
+  theme: "light" | "dark" | "colorful";
+  fontSize: "small" | "medium" | "large";
   includeSlideNumbers: boolean;
   includeNotes: boolean;
 }

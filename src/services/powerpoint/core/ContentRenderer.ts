@@ -1,8 +1,8 @@
 // src/services/powerpoint/core/ContentRenderer.ts - コンテンツレンダリングサービス
-/* global PowerPoint */
+/* global PowerPoint, console */
 
-import { SlideContent, SlideGenerationOptions } from '../types';
-import { ThemeApplier } from './ThemeApplier';
+import { SlideContent, SlideGenerationOptions } from "../types";
+import { ThemeApplier } from "./ThemeApplier";
 
 /**
  * スライドコンテンツのレンダリングを担当するサービス
@@ -24,35 +24,35 @@ export class ContentRenderer {
     options: SlideGenerationOptions
   ): Promise<void> {
     const fontSize = this.themeApplier.getFontSize(options.fontSize);
-    
+
     // メインタイトル
     const titleBox = slide.shapes.addTextBox(slideData.title, {
       left: 75,
       top: 150,
       width: 600,
-      height: 150
+      height: 150,
     });
-    
+
     await context.sync();
-    
+
     titleBox.textFrame.textRange.font.size = fontSize.title;
     titleBox.textFrame.textRange.font.bold = true;
-    this.themeApplier.applyThemeColors(titleBox, options.theme, 'title');
+    this.themeApplier.applyThemeColors(titleBox, options.theme, "title");
 
     // サブタイトル（コンテンツがある場合）
     if (slideData.content && slideData.content.length > 0) {
-      const subtitleText = slideData.content.join(' • ');
+      const subtitleText = slideData.content.join(" • ");
       const subtitleBox = slide.shapes.addTextBox(subtitleText, {
         left: 100,
         top: 320,
         width: 550,
-        height: 100
+        height: 100,
       });
-      
+
       await context.sync();
-      
+
       subtitleBox.textFrame.textRange.font.size = fontSize.subtitle;
-      this.themeApplier.applyThemeColors(subtitleBox, options.theme, 'subtitle');
+      this.themeApplier.applyThemeColors(subtitleBox, options.theme, "subtitle");
     }
 
     // 装飾要素を追加
@@ -69,7 +69,7 @@ export class ContentRenderer {
     options: SlideGenerationOptions
   ): Promise<void> {
     const fontSize = this.themeApplier.getFontSize(options.fontSize);
-    
+
     // タイトル
     await this.addSlideTitle(context, slide, slideData.title, fontSize, options);
 
@@ -80,13 +80,13 @@ export class ContentRenderer {
         left: 80,
         top: 140,
         width: 580,
-        height: 350
+        height: 350,
       });
-      
+
       await context.sync();
-      
+
       contentBox.textFrame.textRange.font.size = fontSize.body;
-      this.themeApplier.applyThemeColors(contentBox, options.theme, 'body');
+      this.themeApplier.applyThemeColors(contentBox, options.theme, "body");
     }
   }
 
@@ -100,7 +100,7 @@ export class ContentRenderer {
     options: SlideGenerationOptions
   ): Promise<void> {
     const fontSize = this.themeApplier.getFontSize(options.fontSize);
-    
+
     // タイトル
     await this.addSlideTitle(context, slide, slideData.title, fontSize, options);
 
@@ -113,18 +113,24 @@ export class ContentRenderer {
       // 左カラム
       if (leftContent.length > 0) {
         await this.renderContentColumn(
-          context, slide, leftContent,
+          context,
+          slide,
+          leftContent,
           { left: 50, top: 140, width: 300, height: 350 },
-          fontSize, options
+          fontSize,
+          options
         );
       }
 
       // 右カラム
       if (rightContent.length > 0) {
         await this.renderContentColumn(
-          context, slide, rightContent,
+          context,
+          slide,
+          rightContent,
           { left: 380, top: 140, width: 300, height: 350 },
-          fontSize, options
+          fontSize,
+          options
         );
       }
 
@@ -143,7 +149,7 @@ export class ContentRenderer {
     options: SlideGenerationOptions
   ): Promise<void> {
     const fontSize = this.themeApplier.getFontSize(options.fontSize);
-    
+
     // タイトル
     await this.addSlideTitle(context, slide, slideData.title, fontSize, options);
 
@@ -152,23 +158,29 @@ export class ContentRenderer {
 
     // コンテンツを交互に配置
     if (slideData.content && slideData.content.length > 0) {
+      const contentBoxes = [];
       for (let index = 0; index < slideData.content.length && index < 8; index++) {
         const item = slideData.content[index];
-        const yPos = 200 + (index * 35);
+        const yPos = 200 + index * 35;
         const isLeft = index % 2 === 0;
-        
+
         const contentBox = slide.shapes.addTextBox(`• ${item}`, {
           left: isLeft ? 50 : 380,
           top: yPos,
           width: 300,
-          height: 30
+          height: 30,
         });
-        
-        await context.sync();
-        
-        contentBox.textFrame.textRange.font.size = fontSize.body;
-        this.themeApplier.applyThemeColors(contentBox, options.theme, 'body');
+        contentBoxes.push(contentBox);
       }
+
+      // ループ後にまとめてsync
+      await context.sync();
+
+      // スタイル適用
+      contentBoxes.forEach((contentBox) => {
+        contentBox.textFrame.textRange.font.size = fontSize.body;
+        this.themeApplier.applyThemeColors(contentBox, options.theme, "body");
+      });
     }
   }
 
@@ -182,7 +194,7 @@ export class ContentRenderer {
     options: SlideGenerationOptions
   ): Promise<void> {
     const fontSize = this.themeApplier.getFontSize(options.fontSize);
-    
+
     // タイトルのみ
     await this.addSlideTitle(context, slide, slideData.title, fontSize, options);
   }
@@ -201,14 +213,14 @@ export class ContentRenderer {
       left: 50,
       top: 40,
       width: 650,
-      height: 80
+      height: 80,
     });
-    
+
     await context.sync();
-    
+
     titleBox.textFrame.textRange.font.size = fontSize.heading;
     titleBox.textFrame.textRange.font.bold = true;
-    this.themeApplier.applyThemeColors(titleBox, options.theme, 'heading');
+    this.themeApplier.applyThemeColors(titleBox, options.theme, "heading");
   }
 
   /**
@@ -224,11 +236,11 @@ export class ContentRenderer {
   ): Promise<void> {
     const contentText = this.formatBulletPoints(content);
     const contentBox = slide.shapes.addTextBox(contentText, position);
-    
+
     await context.sync();
-    
+
     contentBox.textFrame.textRange.font.size = fontSize.body;
-    this.themeApplier.applyThemeColors(contentBox, options.theme, 'body');
+    this.themeApplier.applyThemeColors(contentBox, options.theme, "body");
   }
 
   /**
@@ -245,28 +257,28 @@ export class ContentRenderer {
       left: 50,
       top: 140,
       width: 300,
-      height: 40
+      height: 40,
     });
-    
+
     await context.sync();
-    
+
     leftHeaderBox.textFrame.textRange.font.bold = true;
     leftHeaderBox.textFrame.textRange.font.size = fontSize.accent;
-    this.themeApplier.applyThemeColors(leftHeaderBox, options.theme, 'accent');
+    this.themeApplier.applyThemeColors(leftHeaderBox, options.theme, "accent");
 
     // 右側ヘッダー
     const rightHeaderBox = slide.shapes.addTextBox("詳細", {
       left: 380,
       top: 140,
       width: 300,
-      height: 40
+      height: 40,
     });
-    
+
     await context.sync();
-    
+
     rightHeaderBox.textFrame.textRange.font.bold = true;
     rightHeaderBox.textFrame.textRange.font.size = fontSize.accent;
-    this.themeApplier.applyThemeColors(rightHeaderBox, options.theme, 'accent');
+    this.themeApplier.applyThemeColors(rightHeaderBox, options.theme, "accent");
   }
 
   /**
@@ -283,15 +295,15 @@ export class ContentRenderer {
         left: 50,
         top: 280,
         width: 640,
-        height: 4
+        height: 4,
       });
-      
+
       await context.sync();
-      
+
       const accentColor = this.themeApplier.getAccentColor(options.theme);
       accentShape.fill.setSolidColor(accentColor);
     } catch (error) {
-      console.warn('装飾要素の追加に失敗しました:', error);
+      console.warn("装飾要素の追加に失敗しました:", error);
     }
   }
 
@@ -308,15 +320,15 @@ export class ContentRenderer {
         left: 360,
         top: 130,
         width: 2,
-        height: 300
+        height: 300,
       });
-      
+
       await context.sync();
-      
+
       const borderColor = this.themeApplier.getBorderColor(options.theme);
       dividerLine.fill.setSolidColor(borderColor);
     } catch (error) {
-      console.warn('分割線の追加に失敗しました:', error);
+      console.warn("分割線の追加に失敗しました:", error);
     }
   }
 
@@ -324,10 +336,12 @@ export class ContentRenderer {
    * 箇条書きをフォーマット
    */
   private formatBulletPoints(items: string[]): string {
-    return items.map((item, index) => {
-      const bullet = index === 0 ? '●' : '◦';
-      return `${bullet} ${item}`;
-    }).join('\n\n');
+    return items
+      .map((item, index) => {
+        const bullet = index === 0 ? "●" : "◦";
+        return `${bullet} ${item}`;
+      })
+      .join("\n\n");
   }
 
   /**
@@ -339,7 +353,7 @@ export class ContentRenderer {
     }
 
     // 文字数制限に合わせて調整
-    const truncated = text.substring(0, maxLength - 3) + '...';
+    const truncated = text.substring(0, maxLength - 3) + "...";
     return truncated;
   }
 
@@ -347,13 +361,13 @@ export class ContentRenderer {
    * 改行位置の最適化
    */
   public optimizeLineBreaks(text: string, maxLineLength: number = 50): string {
-    const words = text.split(' ');
+    const words = text.split(" ");
     const lines: string[] = [];
-    let currentLine = '';
+    let currentLine = "";
 
     for (const word of words) {
-      if ((currentLine + ' ' + word).length <= maxLineLength) {
-        currentLine = currentLine ? currentLine + ' ' + word : word;
+      if ((currentLine + " " + word).length <= maxLineLength) {
+        currentLine = currentLine ? currentLine + " " + word : word;
       } else {
         if (currentLine) {
           lines.push(currentLine);
@@ -366,6 +380,6 @@ export class ContentRenderer {
       lines.push(currentLine);
     }
 
-    return lines.join('\n');
+    return lines.join("\n");
   }
 }

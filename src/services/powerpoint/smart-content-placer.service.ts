@@ -1,9 +1,9 @@
 // src/services/powerpoint/smart-content-placer.service.ts - スマートコンテンツ配置サービス
-/* global PowerPoint */
+/* global PowerPoint, console */
 
-import { ThemeInfo, LayoutInfo, PlaceholderInfo } from './theme-types';
-import { ThemeService } from './theme/ThemeService';
-import { SlideContent, SlideGenerationOptions } from './types';
+import { ThemeInfo, LayoutInfo, PlaceholderInfo } from "./theme-types";
+import { ThemeService } from "./theme/ThemeService";
+import { SlideContent, SlideGenerationOptions } from "./types";
 
 /**
  * テーマに基づいてコンテンツを適切に配置するサービス
@@ -26,7 +26,7 @@ export class SmartContentPlacerService {
   ): Promise<void> {
     // テーマ情報を取得
     const themeInfo = await this.themeService.getCurrentThemeInfo();
-    
+
     // 最適なレイアウトを選択
     const optimalLayout = this.themeService.selectOptimalLayout(
       slideData.slideType,
@@ -55,9 +55,9 @@ export class SmartContentPlacerService {
     themeInfo: ThemeInfo,
     options: SlideGenerationOptions
   ): Promise<void> {
-    console.log("options:",options);
+    console.log("options:", options);
     // タイトルプレースホルダーの処理
-    const titlePlaceholder = layout.placeholders.find(p => p.type === 'title');
+    const titlePlaceholder = layout.placeholders.find((p) => p.type === "title");
     if (titlePlaceholder && slideData.title) {
       await this.addContentToPlaceholder(
         context,
@@ -65,28 +65,28 @@ export class SmartContentPlacerService {
         slideData.title,
         titlePlaceholder,
         themeInfo,
-        'title'
+        "title"
       );
     }
 
     // サブタイトルプレースホルダーの処理（タイトルスライドの場合）
-    if (slideData.slideType === 'title') {
-      const subtitlePlaceholder = layout.placeholders.find(p => p.type === 'subtitle');
+    if (slideData.slideType === "title") {
+      const subtitlePlaceholder = layout.placeholders.find((p) => p.type === "subtitle");
       if (subtitlePlaceholder && slideData.content.length > 0) {
-        const subtitleText = slideData.content.join(' | ');
+        const subtitleText = slideData.content.join(" | ");
         await this.addContentToPlaceholder(
           context,
           slide,
           subtitleText,
           subtitlePlaceholder,
           themeInfo,
-          'subtitle'
+          "subtitle"
         );
       }
     }
 
     // コンテンツプレースホルダーの処理
-    const contentPlaceholders = layout.placeholders.filter(p => p.type === 'content');
+    const contentPlaceholders = layout.placeholders.filter((p) => p.type === "content");
     if (contentPlaceholders.length > 0 && slideData.content.length > 0) {
       if (contentPlaceholders.length === 1) {
         // 単一のコンテンツエリア
@@ -97,7 +97,7 @@ export class SmartContentPlacerService {
           contentText,
           contentPlaceholders[0],
           themeInfo,
-          'content'
+          "content"
         );
       } else if (contentPlaceholders.length >= 2) {
         // 複数のコンテンツエリア（2カラムレイアウトなど）
@@ -112,7 +112,7 @@ export class SmartContentPlacerService {
             this.formatBulletPoints(leftContent),
             contentPlaceholders[0],
             themeInfo,
-            'content'
+            "content"
           );
         }
 
@@ -123,7 +123,7 @@ export class SmartContentPlacerService {
             this.formatBulletPoints(rightContent),
             contentPlaceholders[1],
             themeInfo,
-            'content'
+            "content"
           );
         }
       }
@@ -141,7 +141,7 @@ export class SmartContentPlacerService {
     content: string,
     placeholder: PlaceholderInfo,
     themeInfo: ThemeInfo,
-    contentType: 'title' | 'subtitle' | 'content'
+    contentType: "title" | "subtitle" | "content"
   ): Promise<void> {
     // テキストボックスを作成
     const textBox = slide.shapes.addTextBox(content, placeholder.position);
@@ -163,7 +163,7 @@ export class SmartContentPlacerService {
     }
 
     // フォントファミリー（テーマから取得）
-    if (contentType === 'title' || contentType === 'subtitle') {
+    if (contentType === "title" || contentType === "subtitle") {
       textRange.font.name = themeInfo.fontScheme.majorFont.latin;
     } else {
       textRange.font.name = themeInfo.fontScheme.minorFont.latin;
@@ -172,35 +172,42 @@ export class SmartContentPlacerService {
     // テキスト配置
     // PowerPoint.js APIの現在のバージョンでは、直接的なテキスト配置設定が限定的
     // 利用可能なAPIメソッドを確認して設定
-    if (placeholder.textFormat.defaultAlignment && placeholder.textFormat.defaultAlignment !== 'left') {
+    if (
+      placeholder.textFormat.defaultAlignment &&
+      placeholder.textFormat.defaultAlignment !== "left"
+    ) {
       try {
         // PowerPoint.js APIで利用可能な場合のみ設定
         const alignment = placeholder.textFormat.defaultAlignment;
         console.log(`テキスト配置を設定: ${alignment}`);
-        
+
         // 将来のAPI拡張に備えたプレースホルダー
         // 現在のAPIバージョンではこの機能が制限されている可能性があります
-        
+
         // 代替案: テキストの先頭にスペースを追加して擬似的に配置を調整
-        if (alignment === 'center' && content.trim()) {
+        if (alignment === "center" && content.trim()) {
           // 簡易的な中央寄せ（完全ではない）
-          const lines = content.split('\n');
-          const maxLength = Math.max(...lines.map(line => line.length));
-          const paddedContent = lines.map(line => {
-            const padding = Math.floor((maxLength - line.length) / 2);
-            return ' '.repeat(Math.max(0, padding)) + line;
-          }).join('\n');
+          const lines = content.split("\n");
+          const maxLength = Math.max(...lines.map((line) => line.length));
+          const paddedContent = lines
+            .map((line) => {
+              const padding = Math.floor((maxLength - line.length) / 2);
+              return " ".repeat(Math.max(0, padding)) + line;
+            })
+            .join("\n");
           textRange.text = paddedContent;
         }
-      } catch (error) {
-        console.warn('テキスト配置の設定はこのバージョンのPowerPoint.js APIではサポートされていません');
+      } catch {
+        console.warn(
+          "テキスト配置の設定はこのバージョンのPowerPoint.js APIではサポートされていません"
+        );
       }
     }
 
     // 色の適用（テーマカラーを使用）
-    if (contentType === 'title') {
+    if (contentType === "title") {
       textRange.font.color = themeInfo.colorScheme.text1;
-    } else if (contentType === 'subtitle') {
+    } else if (contentType === "subtitle") {
       textRange.font.color = themeInfo.colorScheme.text2;
     } else {
       textRange.font.color = placeholder.textFormat.defaultColor || themeInfo.colorScheme.text1;
@@ -236,11 +243,11 @@ export class SmartContentPlacerService {
         left: 50,
         top: 40,
         width: 650,
-        height: 80
+        height: 80,
       });
-      
+
       await context.sync();
-      
+
       titleBox.textFrame.textRange.font.size = fontSize.heading;
       titleBox.textFrame.textRange.font.bold = true;
     }
@@ -252,11 +259,11 @@ export class SmartContentPlacerService {
         left: 80,
         top: 140,
         width: 580,
-        height: 350
+        height: 350,
       });
-      
+
       await context.sync();
-      
+
       contentBox.textFrame.textRange.font.size = fontSize.body;
     }
 
@@ -276,19 +283,19 @@ export class SmartContentPlacerService {
    * 箇条書きをフォーマット
    */
   private formatBulletPoints(items: string[]): string {
-    return items.map(item => `• ${item}`).join('\n\n');
+    return items.map((item) => `• ${item}`).join("\n\n");
   }
 
   /**
    * デフォルトのフォントサイズを取得
    */
-  private getDefaultFontSize(size?: 'small' | 'medium' | 'large') {
+  private getDefaultFontSize(size?: "small" | "medium" | "large") {
     switch (size) {
-      case 'small':
+      case "small":
         return { title: 32, heading: 20, subtitle: 16, body: 12 };
-      case 'large':
+      case "large":
         return { title: 44, heading: 28, subtitle: 22, body: 16 };
-      case 'medium':
+      case "medium":
       default:
         return { title: 38, heading: 24, subtitle: 18, body: 14 };
     }
@@ -306,13 +313,13 @@ export class SmartContentPlacerService {
       // PowerPoint.js APIでレイアウトを適用
       // 現在のAPIでは直接的なレイアウト適用は限定的
       console.log(`レイアウト「${layoutName}」を適用します`);
-      
+
       // 将来のAPI拡張に備えた実装
       // slide.applyLayout(layoutName);
       // await context.sync();
     } catch (error) {
-      console.warn('レイアウトの適用に失敗しました:', error);
-      console.warn('適用レイアウト:',[context,slide]);
+      console.warn("レイアウトの適用に失敗しました:", error);
+      console.warn("適用レイアウト:", [context, slide]);
     }
   }
 
@@ -329,50 +336,54 @@ export class SmartContentPlacerService {
       slide.shapes.load("items");
       await context.sync();
 
+      // シェイプをバッチでロード
+      slide.shapes.items.forEach((shape) => {
+        shape.load(["type", "left", "top", "width", "height", "textFrame"]);
+      });
+      await context.sync();
+
       for (const shape of slide.shapes.items) {
         try {
-          shape.load(["type", "left", "top", "width", "height", "textFrame"]);
-          await context.sync();
-          
           // PowerPoint.js の ShapeType は列挙型
           // 実際の値を確認してプレースホルダーかどうかを判定
           const shapeType = shape.type;
-          
+
           // デバッグ用：実際のtypeの値を確認
           console.log(`Shape type detected: ${shapeType}`);
-          
+
           // プレースホルダーの判定（複数の方法で試行）
           let isPlaceholder = false;
-          
+
           // 方法1: 文字列での比較
-          if (typeof shapeType === 'string') {
-            isPlaceholder = shapeType === 'Placeholder' || shapeType.toLowerCase() === 'placeholder';
+          if (typeof shapeType === "string") {
+            isPlaceholder =
+              shapeType === "Placeholder" || shapeType.toLowerCase() === "placeholder";
           }
-          
+
           // 方法2: PowerPoint.ShapeType enumとの比較（存在する場合）
           if (!isPlaceholder && PowerPoint.ShapeType) {
             // PowerPoint.ShapeType の各値と比較
             for (const key in PowerPoint.ShapeType) {
-              if (PowerPoint.ShapeType[key] === shapeType && key.toLowerCase() === 'placeholder') {
+              if (PowerPoint.ShapeType[key] === shapeType && key.toLowerCase() === "placeholder") {
                 isPlaceholder = true;
                 break;
               }
             }
           }
-          
+
           // 方法3: プレースホルダーの特徴から推測（フォールバック）
           if (!isPlaceholder && shape.textFrame) {
             // テキストフレームがあり、特定の位置にある場合
             const hasTextFrame = true; // textFrameの存在確認
             const isInTitlePosition = shape.top < 100 && shape.height > 40;
             const isInContentPosition = shape.top > 100 && shape.height > 100;
-            
+
             if (hasTextFrame && (isInTitlePosition || isInContentPosition)) {
-              console.log('プレースホルダーと推測されるシェイプを検出');
+              console.log("プレースホルダーと推測されるシェイプを検出");
               isPlaceholder = true;
             }
           }
-          
+
           if (isPlaceholder) {
             // プレースホルダー情報を構築
             const placeholderInfo: PlaceholderInfo = {
@@ -381,23 +392,23 @@ export class SmartContentPlacerService {
                 x: shape.left,
                 y: shape.top,
                 width: shape.width,
-                height: shape.height
+                height: shape.height,
               },
               textFormat: {
                 defaultFontSize: 18,
                 defaultFontBold: false,
-                defaultAlignment: 'left'
-              }
+                defaultAlignment: "left",
+              },
             };
 
             placeholders.push(placeholderInfo);
           }
         } catch (shapeError) {
-          console.warn('シェイプの処理中にエラーが発生しました:', shapeError);
+          console.warn("シェイプの処理中にエラーが発生しました:", shapeError);
         }
       }
     } catch (error) {
-      console.warn('プレースホルダーの検出に失敗しました:', error);
+      console.warn("プレースホルダーの検出に失敗しました:", error);
     }
 
     return placeholders;
@@ -406,23 +417,23 @@ export class SmartContentPlacerService {
   /**
    * シェイプからプレースホルダータイプを推測
    */
-  private detectPlaceholderType(shape: PowerPoint.Shape): PlaceholderInfo['type'] {
+  private detectPlaceholderType(shape: PowerPoint.Shape): PlaceholderInfo["type"] {
     // PowerPoint.js APIの制限により、現在は位置とサイズから推測
     // また、textFrameの内容も参考にする
     try {
       // シェイプの位置とサイズから推測
       if (shape.top < 100 && shape.height > 50) {
-        return 'title';
+        return "title";
       } else if (shape.top > 300 && shape.height < 150) {
-        return 'subtitle';
+        return "subtitle";
       } else if (shape.width > 400 && shape.height > 200) {
-        return 'content';
+        return "content";
       } else {
-        return 'content';
+        return "content";
       }
     } catch (error) {
-      console.warn('プレースホルダータイプの検出中にエラー:', error);
-      return 'content';
+      console.warn("プレースホルダータイプの検出中にエラー:", error);
+      return "content";
     }
   }
 
@@ -431,18 +442,18 @@ export class SmartContentPlacerService {
    */
   public selectThemeColor(
     themeInfo: ThemeInfo,
-    colorType: 'primary' | 'secondary' | 'accent' | 'background' | 'text'
+    colorType: "primary" | "secondary" | "accent" | "background" | "text"
   ): string {
     switch (colorType) {
-      case 'primary':
+      case "primary":
         return themeInfo.colorScheme.accent1;
-      case 'secondary':
+      case "secondary":
         return themeInfo.colorScheme.accent2;
-      case 'accent':
+      case "accent":
         return themeInfo.colorScheme.accent3;
-      case 'background':
+      case "background":
         return themeInfo.colorScheme.background1;
-      case 'text':
+      case "text":
         return themeInfo.colorScheme.text1;
       default:
         return themeInfo.colorScheme.text1;
@@ -452,16 +463,15 @@ export class SmartContentPlacerService {
   /**
    * 階層構造を持つ箇条書きを作成
    */
-  public createHierarchicalBullets(
-    items: string[],
-    indentLevels?: number[]
-  ): string {
-    return items.map((item, index) => {
-      const indentLevel = indentLevels?.[index] || 0;
-      const indent = '  '.repeat(indentLevel);
-      const bullet = indentLevel === 0 ? '•' : '◦';
-      return `${indent}${bullet} ${item}`;
-    }).join('\n');
+  public createHierarchicalBullets(items: string[], indentLevels?: number[]): string {
+    return items
+      .map((item, index) => {
+        const indentLevel = indentLevels?.[index] || 0;
+        const indent = "  ".repeat(indentLevel);
+        const bullet = indentLevel === 0 ? "•" : "◦";
+        return `${indent}${bullet} ${item}`;
+      })
+      .join("\n");
   }
 
   /**
@@ -472,11 +482,11 @@ export class SmartContentPlacerService {
     maxItemsPerSlide: number = 5
   ): string[][] {
     const slides: string[][] = [];
-    
+
     for (let i = 0; i < content.length; i += maxItemsPerSlide) {
       slides.push(content.slice(i, i + maxItemsPerSlide));
     }
-    
+
     return slides;
   }
 }

@@ -10,21 +10,18 @@ import {
   tokens,
   makeStyles,
 } from "@fluentui/react-components";
-import {
-  Settings24Regular,
-  Play24Regular,
-} from "@fluentui/react-icons";
+import { Settings24Regular, Play24Regular } from "@fluentui/react-icons";
 
 export interface ThemeSettings {
-  theme: 'light' | 'dark' | 'colorful';
-  fontSize: 'small' | 'medium' | 'large';
+  theme: "light" | "dark" | "colorful";
+  fontSize: "small" | "medium" | "large";
 }
 
 interface ThemeSettingsProps {
-  selectedTheme: 'light' | 'dark' | 'colorful';
-  selectedFontSize: 'small' | 'medium' | 'large';
-  onThemeChange: (theme: 'light' | 'dark' | 'colorful') => void;
-  onFontSizeChange: (size: 'small' | 'medium' | 'large') => void;
+  selectedTheme: "light" | "dark" | "colorful";
+  selectedFontSize: "small" | "medium" | "large";
+  onThemeChange: (theme: "light" | "dark" | "colorful") => void;
+  onFontSizeChange: (size: "small" | "medium" | "large") => void;
   onTestTheme: () => void;
   showSettings: boolean;
   onToggleSettings: () => void;
@@ -32,15 +29,15 @@ interface ThemeSettingsProps {
 }
 
 const themeOptions = [
-  { key: 'light', text: 'ライト（白背景）' },
-  { key: 'dark', text: 'ダーク（黒背景）' },
-  { key: 'colorful', text: 'カラフル（多色）' },
+  { key: "light", text: "ライト（白背景）" },
+  { key: "dark", text: "ダーク（黒背景）" },
+  { key: "colorful", text: "カラフル（多色）" },
 ];
 
 const fontSizeOptions = [
-  { key: 'small', text: '小（12-32pt）' },
-  { key: 'medium', text: '中（16-42pt）' },
-  { key: 'large', text: '大（18-48pt）' },
+  { key: "small", text: "小（12-32pt）" },
+  { key: "medium", text: "中（16-42pt）" },
+  { key: "large", text: "大（18-48pt）" },
 ];
 
 const useStyles = makeStyles({
@@ -95,14 +92,14 @@ export const ThemeSettingsComponent: React.FC<ThemeSettingsProps> = ({
 
   const getThemePreviewColors = (theme: string) => {
     switch (theme) {
-      case 'light':
-        return { bg: '#FFFFFF', text: '#000000', accent: '#0078D4' };
-      case 'dark':
-        return { bg: '#1F1F1F', text: '#FFFFFF', accent: '#0078D4' };
-      case 'colorful':
-        return { bg: '#FFFFFF', text: '#323130', accent: '#FF6B35' };
+      case "light":
+        return { bg: "#FFFFFF", text: "#000000", accent: "#0078D4" };
+      case "dark":
+        return { bg: "#1F1F1F", text: "#FFFFFF", accent: "#0078D4" };
+      case "colorful":
+        return { bg: "#FFFFFF", text: "#323130", accent: "#FF6B35" };
       default:
-        return { bg: '#FFFFFF', text: '#000000', accent: '#0078D4' };
+        return { bg: "#FFFFFF", text: "#000000", accent: "#0078D4" };
     }
   };
 
@@ -110,22 +107,18 @@ export const ThemeSettingsComponent: React.FC<ThemeSettingsProps> = ({
     const colors = getThemePreviewColors(selectedTheme);
     return (
       <div className={styles.themePreview}>
-        <div 
-          className={styles.previewBox}
-          style={{ backgroundColor: colors.bg }}
-          title="背景色"
-        />
-        <div 
+        <div className={styles.previewBox} style={{ backgroundColor: colors.bg }} title="背景色" />
+        <div
           className={styles.previewBox}
           style={{ backgroundColor: colors.text }}
           title="テキスト色"
         />
-        <div 
+        <div
           className={styles.previewBox}
           style={{ backgroundColor: colors.accent }}
           title="アクセント色"
         />
-        <Text size={200} style={{ marginLeft: '8px' }}>
+        <Text size={200} style={{ marginLeft: "8px" }}>
           {selectedTheme.toUpperCase()} / {selectedFontSize.toUpperCase()}
         </Text>
       </div>
@@ -156,10 +149,10 @@ export const ThemeSettingsComponent: React.FC<ThemeSettingsProps> = ({
       {showSettings && (
         <div className={styles.themeSection}>
           <Label weight="semibold">テーマ設定（色・フォント）</Label>
-          <Text size={200} style={{ color: tokens.colorNeutralForeground3, marginTop: '4px' }}>
+          <Text size={200} style={{ color: tokens.colorNeutralForeground3, marginTop: "4px" }}>
             ✅ AI詳細化機能と組み合わせて使用されます
           </Text>
-          
+
           <div className={styles.themeControls}>
             <Field label="テーマ">
               <Dropdown
@@ -167,11 +160,11 @@ export const ThemeSettingsComponent: React.FC<ThemeSettingsProps> = ({
                 selectedOptions={[selectedTheme]}
                 onOptionSelect={(_, data) => {
                   if (data.optionValue) {
-                    onThemeChange(data.optionValue as 'light' | 'dark' | 'colorful');
+                    onThemeChange(data.optionValue as "light" | "dark" | "colorful");
                   }
                 }}
               >
-                {themeOptions.map(option => (
+                {themeOptions.map((option) => (
                   <Option key={option.key} value={option.key}>
                     {option.text}
                   </Option>
@@ -185,11 +178,11 @@ export const ThemeSettingsComponent: React.FC<ThemeSettingsProps> = ({
                 selectedOptions={[selectedFontSize]}
                 onOptionSelect={(_, data) => {
                   if (data.optionValue) {
-                    onFontSizeChange(data.optionValue as 'small' | 'medium' | 'large');
+                    onFontSizeChange(data.optionValue as "small" | "medium" | "large");
                   }
                 }}
               >
-                {fontSizeOptions.map(option => (
+                {fontSizeOptions.map((option) => (
                   <Option key={option.key} value={option.key}>
                     {option.text}
                   </Option>
@@ -199,7 +192,7 @@ export const ThemeSettingsComponent: React.FC<ThemeSettingsProps> = ({
           </div>
 
           {/* テーマプレビュー */}
-          <div style={{ marginTop: '12px' }}>
+          <div style={{ marginTop: "12px" }}>
             <Label size="small">プレビュー:</Label>
             {renderThemePreview()}
           </div>
